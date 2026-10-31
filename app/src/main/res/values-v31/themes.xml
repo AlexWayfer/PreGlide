@@ -1,0 +1,6 @@
+<resources>
+    <!-- Android 12+ draws a splash screen with the app icon; its background takes the icon's, so the two blend. -->
+    <style name="Theme.PreGlide" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowSplashScreenBackground">@color/launcher_background</item>
+    </style>
+</resources>

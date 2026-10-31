@@ -1,0 +1,17 @@
+# Settings on top of detekt's defaults (buildUponDefaultConfig in each module's detekt block).
+# Do not raise a threshold or disable a rule to pass a check: split the code instead.
+
+complexity:
+  LongParameterList:
+    # A composable takes its inputs as plain parameters, as Compose's own components do.
+    ignoreAnnotated: ['Composable']
+
+naming:
+  FunctionNaming:
+    # Composables are named like classes.
+    ignoreAnnotated: ['Composable']
+
+style:
+  # Off by default, and Kotlin does not warn either: unused imports piled up between Android Studio's inspections.
+  UnusedImport:
+    active: true

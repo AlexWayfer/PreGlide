@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Each language is a subtype, so the system's own switcher and picker move between them.
+     The keyboard has no switch key of its own. subtypeId keeps a subtype's identity, and with it
+     the user's choice of enabled languages, when its other attributes change.
+     Until the user picks languages, the system enables the subtypes of its own languages, and with
+     a non-Latin one, such as Russian alone, also those marked EnabledWhenDefaultIsNotAsciiCapable
+     (an AOSP convention in SubtypeUtils, not public API), so English comes along. -->
+<input-method xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:settingsActivity="name.alexwayfer.preglide.settings.SettingsActivity"
+    android:supportsSwitchingToNextInputMethod="false">
+    <subtype
+        android:imeSubtypeLocale="ru_RU"
+        android:imeSubtypeMode="keyboard"
+        android:label="@string/subtype_russian"
+        android:languageTag="ru-RU"
+        android:shortLabel="@string/subtype_russian_short"
+        android:subtypeId="1"
+        tools:targetApi="37" />
+    <subtype
+        android:imeSubtypeExtraValue="EnabledWhenDefaultIsNotAsciiCapable"
+        android:imeSubtypeLocale="en_US"
+        android:imeSubtypeMode="keyboard"
+        android:isAsciiCapable="true"
+        android:label="@string/subtype_english"
+        android:languageTag="en-US"
+        android:shortLabel="@string/subtype_english_short"
+        android:subtypeId="2"
+        tools:targetApi="37" />
+</input-method>

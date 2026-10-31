@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Premium's launcher icon: main's three keys and glide, with the glide in gold, as CustomTV Premium's gold play
+     button and heart: the same gradient and a thin light edge. Premium's ic_launcher_foreground is an alias of it
+     (premium's res/values/drawables.xml), so premium's settings title and splash screen show it too, and the free
+     edition's Premium page does by this name.
+     The glide's path is the one in ic_launcher_foreground.xml beside it, which scripts/icon/glide.awk generates. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#59FFFFFF"
+        android:pathData="M27,42.5h10a4,4 0,0 1,4 4v15a4,4 0,0 1,-4 4h-10a4,4 0,0 1,-4 -4v-15a4,4 0,0 1,4 -4z" />
+    <path
+        android:fillColor="#59FFFFFF"
+        android:pathData="M49,42.5h10a4,4 0,0 1,4 4v15a4,4 0,0 1,-4 4h-10a4,4 0,0 1,-4 -4v-15a4,4 0,0 1,4 -4z" />
+    <path
+        android:fillColor="#59FFFFFF"
+        android:pathData="M71,42.5h10a4,4 0,0 1,4 4v15a4,4 0,0 1,-4 4h-10a4,4 0,0 1,-4 -4v-15a4,4 0,0 1,4 -4z" />
+    <!-- The light edge: the glide stroked under its gold fill, so only the stroke's outer half shows, and the seams
+         of the round caps inside the glide stay covered. -->
+    <path
+        android:strokeColor="#FFF8E7A6"
+        android:strokeWidth="0.4"
+        android:strokeLineJoin="round"
+        android:pathData="M26.7,60.9l1.3,-2.3 1.4,-1.9 1.5,-1.8 1.5,-1.4 1.6,-1.2 1.7,-0.9 1.7,-0.6 1.6,-0.3 1.7,-0.1 1.6,0.1 1.6,0.3 1.6,0.6 1.7,0.7 1.6,1.0 1.7,1.3 1.7,1.5 2.1,1.8 2.1,1.5 2.3,1.2 2.2,0.8 2.3,0.5 2.2,0.2 2.3,-0.2 2.1,-0.5 2.0,-0.8 2.0,-1.0 1.8,-1.3 1.8,-1.4 1.8,-1.7 1.6,-2.0 1.5,-2.1 1.4,-2.4 -2.4,-1.4 -1.3,2.3 -1.4,1.9 -1.5,1.8 -1.5,1.4 -1.6,1.2 -1.7,0.9 -1.7,0.6 -1.6,0.3 -1.7,0.1 -1.6,-0.1 -1.6,-0.3 -1.6,-0.6 -1.7,-0.7 -1.6,-1.0 -1.7,-1.3 -1.7,-1.5 -2.1,-1.8 -2.1,-1.5 -2.3,-1.2 -2.2,-0.8 -2.3,-0.5 -2.2,-0.2 -2.3,0.2 -2.1,0.5 -2.0,0.8 -2.0,1.0 -1.8,1.3 -1.8,1.4 -1.8,1.7 -1.6,2.0 -1.5,2.1 -1.4,2.4ZM24.1,60.2a1.4,1.4 0,1 0,2.8,0a1.4,1.4 0,1 0,-2.8,0ZM81.1,47.8a1.4,1.4 0,1 0,2.8,0a1.4,1.4 0,1 0,-2.8,0Z" />
+    <path android:pathData="M26.7,60.9l1.3,-2.3 1.4,-1.9 1.5,-1.8 1.5,-1.4 1.6,-1.2 1.7,-0.9 1.7,-0.6 1.6,-0.3 1.7,-0.1 1.6,0.1 1.6,0.3 1.6,0.6 1.7,0.7 1.6,1.0 1.7,1.3 1.7,1.5 2.1,1.8 2.1,1.5 2.3,1.2 2.2,0.8 2.3,0.5 2.2,0.2 2.3,-0.2 2.1,-0.5 2.0,-0.8 2.0,-1.0 1.8,-1.3 1.8,-1.4 1.8,-1.7 1.6,-2.0 1.5,-2.1 1.4,-2.4 -2.4,-1.4 -1.3,2.3 -1.4,1.9 -1.5,1.8 -1.5,1.4 -1.6,1.2 -1.7,0.9 -1.7,0.6 -1.6,0.3 -1.7,0.1 -1.6,-0.1 -1.6,-0.3 -1.6,-0.6 -1.7,-0.7 -1.6,-1.0 -1.7,-1.3 -1.7,-1.5 -2.1,-1.8 -2.1,-1.5 -2.3,-1.2 -2.2,-0.8 -2.3,-0.5 -2.2,-0.2 -2.3,0.2 -2.1,0.5 -2.0,0.8 -2.0,1.0 -1.8,1.3 -1.8,1.4 -1.8,1.7 -1.6,2.0 -1.5,2.1 -1.4,2.4ZM24.1,60.2a1.4,1.4 0,1 0,2.8,0a1.4,1.4 0,1 0,-2.8,0ZM81.1,47.8a1.4,1.4 0,1 0,2.8,0a1.4,1.4 0,1 0,-2.8,0Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="24"
+                android:startY="46"
+                android:endX="84"
+                android:endY="62">
+                <item android:offset="0" android:color="#FFFAE38C" />
+                <item android:offset="0.55" android:color="#FFE8BE2E" />
+                <item android:offset="1" android:color="#FFD49E12" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

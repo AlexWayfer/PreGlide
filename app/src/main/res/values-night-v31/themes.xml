@@ -1,0 +1,6 @@
+<resources>
+    <!-- The same splash background in the dark theme: it is the icon's color, not a surface. -->
+    <style name="Theme.PreGlide" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowSplashScreenBackground">@color/launcher_background</item>
+    </style>
+</resources>

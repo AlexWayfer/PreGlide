@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The languages the spell checker knows, as the keyboard's subtypes in method.xml. With the system's choice
+     of language left automatic, it checks in the language of the keyboard's current subtype. -->
+<spell-checker xmlns:android="http://schemas.android.com/apk/res/android"
+    android:label="@string/app_name"
+    android:settingsActivity="name.alexwayfer.preglide.settings.SettingsActivity">
+    <subtype
+        android:label="@string/subtype_russian"
+        android:languageTag="ru-RU"
+        android:subtypeId="1"
+        android:subtypeLocale="ru_RU" />
+    <subtype
+        android:label="@string/subtype_english"
+        android:languageTag="en-US"
+        android:subtypeId="2"
+        android:subtypeLocale="en_US" />
+</spell-checker>

@@ -1,0 +1,15 @@
+# Text files use LF in the repository and in every checkout, whatever core.autocrlf says.
+* text=auto eol=lf
+
+# cmd.exe needs CRLF.
+*.bat text eol=crlf
+
+# The dictionaries are generated, hundreds of thousands of lines each, and a rebuild rewrites them whole: no
+# line diff, which would bury the code changes beside them. scripts\build-dictionary.ps1 makes them.
+app/src/main/assets/dictionaries/*.tsv -diff linguist-generated
+
+# The prediction models and their vocabularies are generated too, by model-trainer's export.
+app/src/main/assets/prediction/* -diff linguist-generated
+# The models are tens of megabytes, and each retraining replaces them whole: they live in Git LFS, so the
+# history keeps only pointers to them.
+app/src/main/assets/prediction/*.tflite filter=lfs diff=lfs merge=lfs -text

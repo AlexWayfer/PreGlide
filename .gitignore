@@ -1,0 +1,28 @@
+*.iml
+.gradle
+/.gradle-user
+/.android-user
+/.kotlin/
+/local.properties
+/keystore.properties
+*.jks
+# Signed APKs that Android Studio builds, in a folder per edition; the last two are from before the editions.
+/app/free/
+/app/premium/
+/app/release/
+/app/preRelease/
+/.idea/*
+!/.idea/codeStyles/
+!/.idea/codeStyles/**
+!/.idea/icon.svg
+.DS_Store
+build/
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+/extra/
+/dictionary-builder/cache/
+__pycache__/
+# Each machine's own Claude Code settings, such as the absolute path of the shared memory in .claude/memory.
+/.claude/settings.local.json

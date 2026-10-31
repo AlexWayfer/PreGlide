@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+. The cloud gets the settings only end-to-end encrypted, that is when the device has
+     a screen lock, and never what the keyboard learned from the user's typing (files/personal): it
+     is in effect a digest of everything they type. A transfer to a new device never leaves the
+     user's hands, so it carries everything. -->
+<data-extraction-rules>
+    <cloud-backup disableIfNoEncryptionCapabilities="true">
+        <exclude domain="file" path="personal/" />
+    </cloud-backup>
+    <device-transfer />
+</data-extraction-rules>

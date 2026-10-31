@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="premium_locked">Доступно в Premium</string>
+    <string name="premium_feature_sync">Выученные слова — на всех ваших устройствах: на других смартфонах и на компьютере с Windows в %1$s. Premium там открывает та же покупка</string>
+    <string name="premium_feature_private">Слова шифруются на устройстве: прочитать их могут только ваши устройства, Google — нет</string>
+    <string name="premium_more">И больше — в разработке</string>
+    <string name="premium_upgrade">Перейти на Premium</string>
+    <string name="premium_not_now">Не сейчас</string>
+</resources>
