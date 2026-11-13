@@ -6,6 +6,7 @@ import name.alexwayfer.preglide.engine.layout.KeyAction
 import name.alexwayfer.preglide.engine.layout.Language
 import name.alexwayfer.preglide.engine.suggest.Dictionary
 import name.alexwayfer.preglide.engine.suggest.LanguageModel
+import name.alexwayfer.preglide.engine.suggest.LearningPolicy
 import name.alexwayfer.preglide.testDispatchers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -58,7 +59,7 @@ class GlideTypingTest {
         emails = { null },
         personal = personal,
         clock = { 42 },
-    )
+    ).apply { policy = { LearningPolicy(uses = 1) } }
     private var erasesWord = true
     /** How many glides ended, a word typed or not. */
     private var glided = 0

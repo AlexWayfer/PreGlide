@@ -9,7 +9,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import name.alexwayfer.preglide.engine.layout.Key
@@ -41,6 +43,32 @@ class SpaceSettingTouchTest {
         override fun select(words: Int) = Unit
 
         override fun endSwipe(lifted: Boolean) = Unit
+    }
+
+    @Test
+    fun doubleSpaceDoesNotAddAHintToTheSpaceBar() {
+        val look = KeyLook(
+            hints = false,
+            backgrounds = 1f,
+            dividers = 0f,
+            cornerRadius = 8.dp,
+            height = 48.dp,
+            stripHeight = 40.dp,
+        )
+        compose.setContent {
+            KeyView(
+                Key(KeyAction.Space),
+                KeyboardState(),
+                look,
+                { _, _, _ -> },
+                NoBackspace(),
+                glide = null,
+                Modifier.size(200.dp, 48.dp),
+                SpaceBar(SpaceGestures.SwipeLanguage, Cursor { true }, LanguageSwitch { true }),
+            )
+        }
+        compose.onNodeWithText("2× → .").assertDoesNotExist()
+        compose.onNodeWithText("<|>").assertIsDisplayed()
     }
 
     @Test

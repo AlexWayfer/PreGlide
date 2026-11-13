@@ -57,6 +57,9 @@ class KeyboardSettings(private val store: DataStore<Preferences>, scope: Corouti
         store.edit { it[AUTOCORRECT] = correct }
     }
 
+    /** Optional punctuation shortcuts. */
+    val punctuation = PunctuationSettings(store, preferences, scope)
+
     /**
      * Whether a fresh screenshot is offered in the strip and kept in the clipboard's history, as if copied. It works
      * only with the leave to read all photos, which the screen asks for as the user turns it on.
@@ -81,6 +84,7 @@ class KeyboardSettings(private val store: DataStore<Preferences>, scope: Corouti
 
     /** Glide typing's settings. */
     val glide = GlideSettings(store, preferences, scope)
+    val learning = LearningSettings(store, preferences, scope)
 
     /** The top row's digits, the digit row and the emoji key. */
     val layout = LayoutSettings(store, preferences, scope)

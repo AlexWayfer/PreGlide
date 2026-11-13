@@ -26,6 +26,35 @@ class WordStepsTest {
     }
 
     @Test
+    fun hyphenatedWordsStepBackThroughTheirPartsKeepingTheHyphen() {
+        assertEquals(listOf(4, 0), wordStepsBefore("кто-нибудь", cut = false))
+        assertEquals(listOf(6, 4, 0), wordStepsBefore("рок-н-ролл", cut = false))
+        assertEquals(listOf(4, 0), wordStepsBefore("Как кто-", cut = false))
+    }
+
+    @Test
+    fun hyphenatedPartsTakeTheirTrailingMarksAndSpaces() {
+        assertEquals(listOf(8, 4, 0), wordStepsBefore("Вот кто-нибудь!  ", cut = false))
+        assertEquals(listOf(2, 0), wordStepsBefore("2-го", cut = false))
+        assertEquals(listOf(4, 0), wordStepsBefore("топ-3", cut = false))
+    }
+
+    @Test
+    fun onlyAHyphenBetweenLettersOrDigitsSplitsAStep() {
+        for (text in listOf("-слово", "слово-", "слово--слово", "слово—слово", "слово-.")) {
+            assertEquals(text, listOf(0), wordStepsBefore(text, cut = false))
+        }
+        assertEquals(listOf(8, 6, 0), wordStepsBefore("слово - слово", cut = false))
+    }
+
+    @Test
+    fun completePartsOfACutHyphenatedWordCanBeSelected() {
+        assertEquals(listOf(4), wordStepsBefore("кто-нибудь", cut = true))
+        assertEquals(listOf(6, 4), wordStepsBefore("рок-н-ролл", cut = true))
+        assertEquals(emptyList<Int>(), wordStepsBefore("-нибудь", cut = true))
+    }
+
+    @Test
     fun `the start of a cut text is no step, as its word may go on before it`() {
         assertEquals(listOf(4), wordStepsBefore("вет дела", cut = true))
         assertEquals(emptyList<Int>(), wordStepsBefore("ривет", cut = true))

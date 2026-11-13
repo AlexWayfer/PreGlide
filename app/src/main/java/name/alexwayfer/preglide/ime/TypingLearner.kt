@@ -153,7 +153,7 @@ class TypingLearner(
         // Right after a mark, the choice goes a space after it, as [pick] puts it.
         if (choiceNeedsSpace(before)) current.start++
         editing = null
-        current.change(word, language())
+        current.choose(word, language())
         finish(current, kept, chose = true)
     }
 
@@ -320,6 +320,12 @@ private class Editing(
     /** The word reads [word] now, the letters that went in typed in [typedIn]. */
     fun change(word: String, typedIn: Language? = this.typedIn) {
         languages = retyped(this.word, languages, word, typedIn)
+        this.word = word
+    }
+
+    /** A suggestion explicitly chosen belongs to its keyboard language, including an unchanged pasted word. */
+    fun choose(word: String, language: Language) {
+        languages = List(word.length) { language }
         this.word = word
     }
 

@@ -58,6 +58,15 @@ class StripEmojiTest {
     }
 
     @Test
+    fun onlyTheChangedLetterIsMarkedInTheSecondCapitalSuggestion() {
+        val slots = stripSlotContents(listOf("Wokege"), "WOkege", emptyList())
+        val original = slots.first() as SlotContent.Word
+        val suggestion = slots[BEST_SLOT] as SlotContent.Word
+        assertEquals(emptyList<Any>(), original.styledLabel.spanStyles)
+        assertEquals(listOf(1 to 2), suggestion.styledLabel.spanStyles.map { it.start to it.end })
+    }
+
+    @Test
     fun theEmojiTakeTheRightSlotInPlaceOfItsWord() {
         val words = listOf("привет", "пока", "как")
 

@@ -75,6 +75,33 @@ class WordSuggestionsTest {
     }
 
     @Test
+    fun aLearnedWordCanBeRemovedWhenTypedInFull() {
+        suggestions.update()
+        val personal = suggestions.model(Language.Russian)!!.personal
+        personal.learn("бер", previous = null, time = 0)
+        field.text = "бер"
+
+        suggestions.update()
+
+        val words = stripWords(keyboard)
+        assertEquals("бер", keyboard.typedWord)
+        assertTrue(isRemovable("бер", words.typedWord, words.typedWordRemovable))
+        personal.remove("бер", time = 1)
+        suggestions.update()
+        assertFalse(keyboard.typedWordRemovable)
+        field.text = "привет"
+        suggestions.update()
+        assertTrue(keyboard.typedWordRemovable)
+        field.text = "прив"
+        suggestions.update()
+        assertFalse(keyboard.typedWordRemovable)
+        field.text = "привет"
+        suggestions.update()
+        suggestions.clear()
+        assertFalse(keyboard.typedWordRemovable)
+    }
+
+    @Test
     fun theStripOffersEmojiForTheWordBeforeTheCursor() {
         readEmoji()
         field.text = "Ну пицца"
@@ -154,8 +181,8 @@ class WordSuggestionsTest {
     fun afterAHyphenTheNextWordsAfterThePartBeforeItGoOnTheWord() {
         field.text = "Ну привет-"
         suggestions.update()
-        assertEquals(listOf("привет-всем", "привет-как"), keyboard.suggestions)
-        assertEquals(GluedWords("привет-", setOf("привет-всем", "привет-как")), keyboard.gluedWords)
+        assertEquals(listOf("привет-то", "привет-с", "привет-всем"), keyboard.suggestions)
+        assertEquals(GluedWords("привет-", setOf("привет-то", "привет-с", "привет-всем")), keyboard.gluedWords)
 
         suggestions.choose("привет-всем")
         assertEquals("Ну привет-всем ", field.text)
@@ -171,8 +198,8 @@ class WordSuggestionsTest {
 
         suggestions.update()
 
-        assertEquals(listOf("привет-всем", "привет-как"), keyboard.suggestions)
-        assertEquals(GluedWords("привет-", setOf("привет-как")), keyboard.gluedWords)
+        assertEquals(listOf("привет-всем", "привет-то", "привет-с"), keyboard.suggestions)
+        assertEquals(GluedWords("привет-", setOf("привет-то", "привет-с")), keyboard.gluedWords)
     }
 
     @Test

@@ -8,6 +8,7 @@ import name.alexwayfer.preglide.engine.layout.Language
 import name.alexwayfer.preglide.engine.predict.NextTokens
 import name.alexwayfer.preglide.engine.suggest.LanguageModel
 import name.alexwayfer.preglide.engine.suggest.PersonalWords
+import name.alexwayfer.preglide.engine.suggest.SuggestionInput
 import name.alexwayfer.preglide.engine.suggest.TapTrail
 import name.alexwayfer.preglide.engine.suggest.Touches
 import name.alexwayfer.preglide.engine.suggest.correction
@@ -18,6 +19,7 @@ import name.alexwayfer.preglide.engine.suggest.isEmptyField
 import name.alexwayfer.preglide.engine.suggest.numberEndings
 import name.alexwayfer.preglide.engine.suggest.predictedText
 import name.alexwayfer.preglide.engine.suggest.preferredSpelling
+import name.alexwayfer.preglide.engine.suggest.secondCapitalSuggestion
 import name.alexwayfer.preglide.engine.suggest.wordRest
 import name.alexwayfer.preglide.engine.suggest.suggestions
 
@@ -109,6 +111,9 @@ class WordSuggestions(
     /** A space deferred while a chosen word is followed by an existing closing mark. */
     val choiceSpace = ChoiceSpace(field)
 
+    /** The period placed by two explicit space taps, independently of the keyboard's automatic spaces. */
+    val periodSpace = PeriodSpace(field)
+
     /** Where the keys were tapped for the chars typed last, so a slip to a key nearby still gets its word. */
     val taps = TapTrail()
 
@@ -173,6 +178,7 @@ class WordSuggestions(
         if (!cursorIsPoint) {
             ownSpace.forget()
             choiceSpace.forget()
+            periodSpace.forget()
         }
         if (showOffered(cursorIsPoint)) return
         val model = if (available()) models.loadedOrLoading(keyboard.language) else null
@@ -192,6 +198,7 @@ class WordSuggestions(
             val typed = currentWord(text)
             val typedWord = model?.let { loaded -> typedToKeep(text)?.let { preferredSpelling(it, loaded) } }
             keyboard.typedWord = typedWord
+            keyboard.typedWordRemovable = typedWordRemovable(typedWord, model)
             keyboard.glidedWord = null
             keyboard.correction = suggested.correction
             keyboard.fieldStart = suggested.fieldStart
@@ -232,11 +239,13 @@ class WordSuggestions(
         keyboard.suggestions = emptyList()
         keyboard.fieldStart = false
         keyboard.typedWord = null
+        keyboard.typedWordRemovable = false
         keyboard.gluedWords = null
         keyboard.glidedWord = null
         keyboard.correction = null
         keyboard.stripEmoji = emptyList()
         ownSpace.forget()
+        periodSpace.forget()
         taps.clear()
         corrections.clear()
         glides.forget()
@@ -282,28 +291,35 @@ class WordSuggestions(
         val endings = numberEndings(text, keyboard.language, STRIP_SLOTS, model?.personal ?: PersonalWords())
         // Asked for only when the strip needs it: a prediction takes its time.
         val next by lazy { nextFor(model, predictedText(text)) }
+        val capital = model?.let { secondCapitalSuggestion(currentWord(text), it) }
         return when {
             endings.isNotEmpty() -> Suggested(endings, null)
             model != null && emptyField ->
                 Suggested(fieldStartWords(model.personal, STRIP_SLOTS), null, fieldStart = true)
-            next == Next.Waiting -> null
+            next == Next.Waiting && capital == null -> null
             model == null -> Suggested(emptyList(), null)
-            else -> suggestedWith(text, model, (next as? Next.Ready)?.tokens)
+            else -> suggestedWith(text, model, (next as? Next.Ready)?.tokens, capital)
         }
     }
 
     /** What the strip suggests for [text] with [model] and [tokens], the prediction for it, if any. */
-    private fun suggestedWith(text: CharSequence, model: LanguageModel, tokens: NextTokens?): Suggested {
+    private fun suggestedWith(
+        text: CharSequence,
+        model: LanguageModel,
+        tokens: NextTokens?,
+        capital: String?,
+    ): Suggested {
         val typed = currentWord(text)
         val touches = Touches(KeyboardLayout.of(keyboard.language), taps.pointsFor(typed), taps.rowHeight)
-        val words = suggestions(text, model, STRIP_SLOTS, tokens, touches)
+        val input = SuggestionInput(text, preferCapital = prefersWordCapital(text, keyboard.shift, field.inputType))
+        val words = suggestions(input, model, STRIP_SLOTS, tokens, touches)
         // A space inside a word splits it: the half before the cursor is no word typed to its end.
         val atWordEnd = wordRest(charAfterCursor).isEmpty()
         val corrects = corrects() && correctsIn(field.inputType) && atWordEnd && !corrections.keeps(typed)
         // The prediction for a word a hyphen splits is for the part after the hyphen, not for the whole word.
         val wholeNext = tokens?.takeIf { hyphenSplit(text) == null }
         val correction = if (corrects) correction(text, words, model, wholeNext, touches) else null
-        return Suggested(firstOf(words, correction), correction, byModel = tokens != null)
+        return Suggested(firstOf(words, correction ?: capital).take(STRIP_SLOTS), correction, byModel = tokens != null)
     }
 
     /**
@@ -332,6 +348,7 @@ class WordSuggestions(
         // A glide's own word comes first, in the middle, marked as the one in the text.
         keyboard.glidedWord = if (email) null else offered.first()
         keyboard.typedWord = null
+        keyboard.typedWordRemovable = false
         keyboard.gluedWords = null
         keyboard.correction = null
         keyboard.stripEmoji = emptyList()

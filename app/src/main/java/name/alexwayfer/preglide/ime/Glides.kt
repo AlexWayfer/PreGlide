@@ -62,6 +62,7 @@ class Glides(
             (answer as? Next.Ready)?.tokens,
             previous,
             contextComing = answer == Next.Waiting,
+            preferCapital = prefersWordCapital(context, keyboard.shift, field.inputType),
         )
     }
 
@@ -220,11 +221,12 @@ class GlideReading(
     private val next: NextTokens?,
     private val previous: List<String>,
     val contextComing: Boolean = false,
+    private val preferCapital: Boolean = false,
 ) {
     /** The words [glide] may mean, the likeliest first, in the dictionary's spelling. */
     fun words(glide: Glide): List<String> = scores(glide).map { it.word }
 
     /** [words] with what each was scored by. */
     fun scores(glide: Glide): List<GlidedWord> =
-        glidedScores(model, layout, glide, STRIP_SLOTS + 1, WordsBefore(previous, next))
+        glidedScores(model, layout, glide, STRIP_SLOTS + 1, WordsBefore(previous, next, preferCapital))
 }

@@ -26,6 +26,9 @@ class PersonalWords internal constructor(internal val next: LearnedNext) {
     constructor() : this(LearnedNext())
 
     internal val words = HashMap<String, Learned>()
+    internal val edits = WordEdits()
+    internal val candidates = WordCandidates()
+    val hasWordEdits: Boolean get() = edits.commands.isNotEmpty()
     internal val removed = HashMap<String, Long>()
 
     /** When each word was forgotten last: its uses on any device from before then are left out. */
@@ -47,7 +50,7 @@ class PersonalWords internal constructor(internal val next: LearnedNext) {
      */
     fun learn(word: String, context: List<String>, time: Long, kept: Boolean = false) {
         val key = keyOf(word)
-        removed.remove(key)
+        if (removed.remove(key) != null) others = OtherDevices(this, others.devices)
         words[key] = learnedOnce(words[key], word, time, kept)
         version++
         learnNext(word, context, time)
@@ -73,15 +76,18 @@ class PersonalWords internal constructor(internal val next: LearnedNext) {
     fun forget(word: String, time: Long): Forgotten {
         val key = keyOf(word)
         val learned = words.remove(key)
+        candidates.clear(key)
         val start = starts.forget(word)
         val after = next.forget(word)
         val forgottenBefore = forgotten.put(key, maxOf(time, forgotten[key] ?: time))
+        others = OtherDevices(this, others.devices)
         version++
         return Forgotten {
             learned?.let { words.merge(keyOf(it.spelling), it, ::restored) }
             start?.let(starts::restore)
             next.restore(after)
             if (forgottenBefore == null) forgotten.remove(key) else forgotten[key] = forgottenBefore
+            others = OtherDevices(this, others.devices)
             version++
         }
     }
@@ -90,6 +96,7 @@ class PersonalWords internal constructor(internal val next: LearnedNext) {
     fun remove(word: String, time: Long) {
         forget(word, time)
         removed[keyOf(word)] = time
+        others = OtherDevices(this, others.devices)
     }
 
     /** How many words the user removed. */
@@ -125,6 +132,8 @@ class PersonalWords internal constructor(internal val next: LearnedNext) {
         forgotten.takeAll(other.forgotten)
         next.replaceWith(other.next)
         starts.replaceWith(other.starts)
+        edits.replaceWith(other.edits)
+        candidates.replaceWith(other.candidates)
         others = OtherDevices(this, other.others.devices)
         version++
     }
@@ -138,11 +147,13 @@ class PersonalWords internal constructor(internal val next: LearnedNext) {
      * or forgotten word: what [read] reads back.
      */
     fun write(out: Appendable) {
-        for (word in words.values) {
-            with(word) { out.append("$WORD\t$spelling\t$count\t$lastUsed\t$kept\n") }
+        val edited = edits.commands.isNotEmpty()
+        if (edited) {
+            others.materialized().writeTables(out, WORD, NEXT, START)
+            out.append("$EDIT_BASE\n")
         }
-        next.write(out, NEXT)
-        starts.write(out, START)
+        if (edited) writeTables(out, "bw", "bn", "bs") else writeTables(out, WORD, NEXT, START)
+        edits.write(out)
         for ((word, time) in removed) out.append("$REMOVED\t$word\t$time\n")
         for ((word, time) in forgotten) out.append("$FORGOTTEN\t$word\t$time\n")
     }
@@ -168,27 +179,28 @@ class PersonalWords internal constructor(internal val next: LearnedNext) {
                 copy.starts.putAll(personal.starts)
                 copy.removed.putAll(personal.removed)
                 copy.forgotten.putAll(personal.forgotten)
+                copy.edits.replaceWith(personal.edits)
                 copy.others = OtherDevices(copy, personal.others.devices)
             }
 
         /** Reads what [write] wrote. A line it cannot read, as from a newer version, is skipped. */
-        fun read(lines: Sequence<String>): PersonalWords = PersonalWords().apply {
-            for (fields in lines.map { it.split('\t') }) {
-                when (fields.first()) {
-                    WORD -> readWord(fields)?.let { words[keyOf(it.spelling)] = it }
-                    NEXT, PAIR -> readWord(fields.drop(1))?.let { next.put(fields[1], it) }
-                    START -> readWord(fields)?.let(starts::put)
-                    REMOVED -> fields.getOrNull(2)?.toLongOrNull()?.let { removed[fields[1]] = it }
-                    FORGOTTEN -> fields.getOrNull(2)?.toLongOrNull()?.let { forgotten[fields[1]] = it }
-                }
+        fun read(lines: Sequence<String>): PersonalWords {
+            var owner = PersonalWords()
+            for (line in lines) {
+                if (line == EDIT_BASE) owner = PersonalWords() else readRow(owner, line.split('\t'))
             }
+            return owner
         }
 
-        private fun readWord(fields: List<String>): Learned? {
-            val count = fields.getOrNull(2)?.toIntOrNull()
-            val time = fields.getOrNull(3)?.toLongOrNull()
-            val kept = fields.getOrNull(4)?.toIntOrNull() ?: 0
-            return if (count != null && time != null) Learned(fields[1], count, time, kept) else null
+        private fun readRow(owner: PersonalWords, fields: List<String>) = with(owner) {
+            when (fields.first()) {
+                WORD, "bw" -> readLearned(fields.drop(1))?.let { words[keyOf(it.spelling)] = it }
+                NEXT, PAIR, "bn" -> readLearned(fields.drop(2))?.let { next.put(fields[1], it) }
+                START, "bs" -> readLearned(fields.drop(1))?.let(starts::put)
+                REMOVED -> fields.getOrNull(2)?.toLongOrNull()?.let { removed[fields[1]] = it }
+                FORGOTTEN -> fields.getOrNull(2)?.toLongOrNull()?.let { forgotten[fields[1]] = it }
+                else -> edits.read(fields)
+            }
         }
     }
 }

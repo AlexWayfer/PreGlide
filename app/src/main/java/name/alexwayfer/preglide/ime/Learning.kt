@@ -3,6 +3,12 @@ package name.alexwayfer.preglide.ime
 import name.alexwayfer.preglide.engine.layout.Language
 import name.alexwayfer.preglide.engine.suggest.AFTER_NUMBER
 import name.alexwayfer.preglide.engine.suggest.LanguageModel
+import name.alexwayfer.preglide.engine.suggest.LearningPolicy
+import name.alexwayfer.preglide.engine.suggest.WordOccurrence
+import name.alexwayfer.preglide.engine.suggest.isCandidate
+import name.alexwayfer.preglide.engine.suggest.observe
+import name.alexwayfer.preglide.engine.suggest.pendingSpelling
+import name.alexwayfer.preglide.engine.suggest.undoOccurrence
 import name.alexwayfer.preglide.engine.suggest.PersonalWords
 import name.alexwayfer.preglide.engine.suggest.currentWord
 import name.alexwayfer.preglide.engine.suggest.isLearnable
@@ -18,7 +24,7 @@ private const val WORD_AROUND = 64
  * word to learn, as a letter of a smiley, which ends the context. A number before a hyphen, [AFTER_NUMBER], is one.
  */
 fun learnableContext(context: List<String>, model: LanguageModel): List<String> =
-    context.takeLastWhile { it == AFTER_NUMBER || isLearnable(it, model) }
+    context.takeLastWhile { it == AFTER_NUMBER || isLearnable(it, model) && !model.personal.isCandidate(it) }
 
 /**
  * Whether [char], typed after [textBefore], the text before the cursor, goes in the word there: a letter, a hyphen
@@ -42,6 +48,8 @@ class Learning(
     private val personal: PersonalData,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
+    var policy: () -> LearningPolicy = { LearningPolicy() }
+
     private val teacher = object : Teacher {
         override fun learn(
             word: String,
@@ -51,27 +59,30 @@ class Learning(
             beganField: Boolean,
         ): LearnedUse? {
             val model = teachable(language)?.takeIf { isLearnable(word, it) } ?: return null
-            val spelling = learnedSpelling(word, sentenceStart = context.isEmpty(), model, kept)
+            val now = clock()
+            val rule = policy()
+            val candidate = model.personal.pendingSpelling(word, now, rule)
+            val spelling = learnedSpelling(word, sentenceStart = context.isEmpty(), model, kept, candidate)
             val after = learnableContext(context, model)
             log?.learnedAfter(model.personal.seen(spelling, after))
-            model.personal.learn(spelling, after, clock(), kept)
-            if (beganField) model.personal.starts.learn(spelling, clock())
+            model.personal.observe(WordOccurrence(spelling, after, now, kept, beganField), rule)
             personal.changed(personalName(language))
             return LearnedUse(spelling, after, language, kept, beganField)
         }
 
         override fun unlearn(use: LearnedUse) {
             val words = models(use.language)?.personal
-            words?.unlearn(use.spelling, use.context, use.kept)
-            if (use.beganField) words?.starts?.unlearn(use.spelling)
+            words?.undoOccurrence(use.spelling, use.context, use.kept, use.beganField)
             personal.changed(personalName(use.language))
         }
 
         override fun learnNext(word: String, context: List<String>, language: Language) {
             val model = teachable(language)?.takeIf { isLearnable(word, it) } ?: return
             val after = learnableContext(context, model).ifEmpty { return }
-            model.personal.learnNext(learnedSpelling(word, sentenceStart = false, model), after, clock())
-            personal.changed(personalName(language))
+            if (policy().uses == 1 || model.personal.learned(word) != null) {
+                model.personal.learnNext(learnedSpelling(word, sentenceStart = false, model), after, clock())
+                personal.changed(personalName(language))
+            }
         }
 
         /** The model of [language] to teach: loaded, in a field that allows learning; or null. */

@@ -25,7 +25,7 @@ android {
         targetSdk = 37
         // One counter for both editions: they share the application ID and install over each other, and
         // Android refuses a lower code. Every release of either edition raises it; each edition names its own version.
-        versionCode = 5
+        versionCode = 7
 
         // Phones only, 64-bit and 32-bit ARM: some still run 32-bit Android. The x86 emulator is not needed yet.
         ndk {
@@ -39,14 +39,14 @@ android {
     productFlavors {
         create("free") {
             dimension = "tier"
-            versionName = "1.0.0"
+            versionName = "1.1.0"
             buildConfigField("boolean", "PREMIUM", "false")
         }
         if (premiumSources) {
             create("premium") {
                 dimension = "tier"
                 isDefault = true
-                versionName = "0.3.0"
+                versionName = "1.0.0"
                 buildConfigField("boolean", "PREMIUM", "true")
             }
         }

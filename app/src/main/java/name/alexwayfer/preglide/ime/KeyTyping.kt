@@ -70,6 +70,7 @@ class KeyTyping(
         val afterGlide = glideTyping.beforeKey(action)
         autocorrect.beforeKey(action, afterGlide)
         suggestions.choiceSpace.beforeKey(action)
+        suggestions.periodSpace.beforeKey(action, longPress)
         // The strip after a letter is not logged; a space or a backspace says otherwise below.
         suggestions.log.awaitStrip(null)
         when (action) {
@@ -117,7 +118,13 @@ class KeyTyping(
 
     private fun space() {
         suggestions.log.awaitStrip(StripTrigger.Space)
-        if (autocorrect.beforeTyping(' ')) {
+        val period = suggestions.periodSpace.replaceSpace()
+        if (period != null) {
+            suggestions.ownSpace.forget()
+            learning.expectEdit(period)
+            keyboard.afterTyping(' ')
+            autoCapitalize()
+        } else if (autocorrect.beforeTyping(' ')) {
             // The correction brought its own space.
             keyboard.afterTyping(' ')
             autoCapitalize()
@@ -131,6 +138,7 @@ class KeyTyping(
             // The field stays as it was, and so does the strip.
             suggestions.log.awaitStrip(null)
         }
+        suggestions.periodSpace.spaced()
     }
 
     private fun enter() {
@@ -154,12 +162,17 @@ class KeyTyping(
         suggestions.log.awaitStrip(StripTrigger.Backspace)
         // Right after marks took the keyboard's own space, the backspace brings it back before them; whatever else
         // the backspace erases, the space is the user's from now on.
-        val ownSpaceEdit = suggestions.ownSpace.backspace()
+        val periodEdit = suggestions.periodSpace.backspace()
+        val ownSpaceEdit = if (periodEdit == null) suggestions.ownSpace.backspace() else null
         // The shift a glided word the backspace erased was typed with.
         var erasedWith: ShiftState? = null
         // Whether the char erased was the capital a word began with.
         var erasedCapital = false
         val branch = when {
+            periodEdit != null -> {
+                learning.expectEdit(periodEdit)
+                BackspaceBranch.PeriodUndone
+            }
             ownSpaceEdit != null -> {
                 learning.expectEdit(ownSpaceEdit)
                 BackspaceBranch.OwnSpaceUndone
@@ -184,6 +197,7 @@ class KeyTyping(
 
     /** The user tapped [word] in the strip: once a glide still read typed its word (see [AfterGlides.whenRead]). */
     fun chose(word: String) = glideTyping.afterGlides.whenRead {
+        suggestions.periodSpace.forget()
         suggestions.log.awaitStrip(StripTrigger.Choice)
         keyboard.showing.typed()
         // A word the glide may have meant swaps in for it; any other is chosen, after it where it is a next word.
@@ -210,6 +224,7 @@ class KeyTyping(
      * swipe ends, and the word is not learned.
      */
     fun beforeSelectingWords() {
+        suggestions.periodSpace.forget()
         keyboard.removing = null
         keyboard.selectingWords = true
         learning.beforeSelectingWords()

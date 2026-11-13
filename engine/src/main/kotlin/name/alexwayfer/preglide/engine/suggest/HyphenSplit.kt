@@ -30,21 +30,30 @@ fun hyphenSplit(textBefore: CharSequence): HyphenSplit? {
 fun predictedText(textBefore: CharSequence): CharSequence = hyphenSplit(textBefore)?.spaced ?: textBefore
 
 /**
- * Up to [count] words for the word being typed at the end of [textBefore], which [split] splits at its last hyphen:
+ * Up to [count] words for [input]'s typed word, which [split] splits at its last hyphen:
  * the whole words the dictionary and the user know that start so, as "кто-нибудь" for "кто-", then the next words
  * after the part before the hyphen that start as the part after it, put on it, as "потихоньку-помаленьку" for
  * "потихоньку-"; all cased like the word typed. [next] is what the prediction model gives for [HyphenSplit.spaced].
  */
 internal fun hyphenSuggestions(
-    textBefore: CharSequence,
+    input: SuggestionInput,
     split: HyphenSplit,
     model: LanguageModel,
     count: Int,
     next: NextTokens?,
 ): List<String> {
-    val typed = currentWord(textBefore)
-    val after = suggestions(split.spaced, model, count, next).map { split.head + it }
-    return (completions(model, typed, count, typing = null) + after)
+    val typed = input.typed
+    val after = suggestions(SuggestionInput(split.spaced, input.preferCapital), model, count, next)
+        .map { split.head + it }
+    val particles = particleCompletions(typed, split.head)
+    // Even a known -с follows -то when both particles fit.
+    val defer = particles.lastOrNull().takeIf { particles.size == 2 }
+    val completed = completions(model, typed, count, typing = null, preferCapital = input.preferCapital)
+    val ordered = if (input.preferCapital) capitalWordsFirst(completed, typed, model.personal) else completed
+    val known = ordered.filterNot {
+        defer != null && it.equals(defer, ignoreCase = true)
+    }
+    return (known + particles + after)
         .filterNot { model.personal.isRemoved(it) }
         .distinctBy { it.lowercase(Locale.ROOT) }
         .take(count)

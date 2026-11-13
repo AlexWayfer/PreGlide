@@ -108,6 +108,16 @@ class DictionaryTest {
     }
 
     @Test
+    fun correctedYoFrequenciesKeepBothWords() {
+        val russian = File("../app/src/main/assets/dictionaries/ru.tsv").reader().use(Dictionary::read)
+
+        assertEquals(listOf("колёса", "колеса"), russian.complete("колеса", 2))
+        assertEquals(21_251L, russian.frequency("колеса") + russian.frequency("колёса"))
+        assertEquals("колеса", russian.spellingOf("колеса"))
+        assertFalse("колеса" in russian.complete("колёса", 2))
+    }
+
+    @Test
     fun `the app's dictionaries load and complete common words`() {
         val assets = File("../app/src/main/assets/dictionaries")
         val russian = File(assets, "ru.tsv").reader().use(Dictionary::read)

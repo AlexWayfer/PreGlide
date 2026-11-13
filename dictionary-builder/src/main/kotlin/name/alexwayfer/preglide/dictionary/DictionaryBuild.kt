@@ -60,7 +60,7 @@ class DictionaryBuild(
         val web = Counts(counter.forms(counts, corpus), counter.total(counts, corpus))
         val subtitles = corpus.subtitles?.let { subtitlesOf(it, corpus, counter) }
         val words = dictionary(blend(listOfNotNull(web to webShare(corpus), subtitles)), corpus, spelledOf(corpus))
-        val spelled = withYo(words, yo)
+        val spelled = rebalanceYo(withYo(words, yo))
         Files.writeString(output.resolve("${corpus.code}.tsv"), dictionaryText(spelled))
         report(summary(corpus, spelled))
         if (corpus.spelling != null) {
@@ -141,7 +141,8 @@ class DictionaryBuild(
         val web = counter.pairs(corpus.sources.map { webPairsOf(it, key, counter) }) to webShare(corpus)
         val subtitles = corpus.subtitles?.let { counter.pairs(listOf(subtitlePairsOf(it, key, counter))) to it.share }
         val result = nextWords(listOfNotNull(web, subtitles), words, yo)
-        Files.writeString(output.resolve("${corpus.code}.next.tsv"), nextWordsText(result, withYo(words, yo)))
+        val spelled = rebalanceYo(withYo(words, yo))
+        Files.writeString(output.resolve("${corpus.code}.next.tsv"), nextWordsText(result, spelled))
         report(nextWordsSummary(corpus, result))
     }
 

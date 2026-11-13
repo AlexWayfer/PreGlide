@@ -36,6 +36,7 @@ enum class StripSource(val label: String) {
 enum class BackspaceBranch(val label: String) {
     CorrectionUndone("undid autocorrect"),
     OwnSpaceUndone("undid marks taking the own space"),
+    PeriodUndone("undid double-space period"),
     GlideErased("erased the glided word"),
     Deleted("deleted"),
 }

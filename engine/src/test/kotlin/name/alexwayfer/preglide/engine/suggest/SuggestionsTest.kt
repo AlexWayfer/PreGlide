@@ -71,8 +71,8 @@ class SuggestionsTest {
         val pairs = NextWords.parse(sequenceOf("как\tдела\t50", "как\tты\t40", "как\tдолго\t20"), words)
         val hyphens = LanguageModel(words, pairs)
 
-        assertEquals(listOf("как-то", "как-дела", "как-ты"), suggestions("Ну как-", hyphens, 3))
-        assertEquals(listOf("Как-то", "Как-дела", "Как-ты"), suggestions("Как-", hyphens, 3))
+        assertEquals(listOf("как-то", "как-с", "как-дела"), suggestions("Ну как-", hyphens, 3))
+        assertEquals(listOf("Как-то", "Как-с", "Как-дела"), suggestions("Как-", hyphens, 3))
         assertEquals(listOf("как-дела", "как-долго", "как-для"), suggestions("как-д", hyphens, 3))
     }
 

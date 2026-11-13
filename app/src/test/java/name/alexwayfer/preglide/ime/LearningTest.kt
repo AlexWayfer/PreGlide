@@ -8,6 +8,7 @@ import name.alexwayfer.preglide.engine.suggest.AFTER_NUMBER
 import name.alexwayfer.preglide.engine.suggest.Dictionary
 import name.alexwayfer.preglide.engine.suggest.LanguageModel
 import name.alexwayfer.preglide.engine.suggest.Learned
+import name.alexwayfer.preglide.engine.suggest.LearningPolicy
 import name.alexwayfer.preglide.engine.suggest.after
 import name.alexwayfer.preglide.engine.suggest.isRemoved
 import name.alexwayfer.preglide.engine.suggest.learn
@@ -84,7 +85,7 @@ class LearningTest {
         emails = { addresses },
         personal = personal,
         clock = { 42 },
-    )
+    ).apply { policy = { LearningPolicy(uses = 1) } }
     private val removal = WordRemoval(
         field,
         language = { language },
@@ -93,6 +94,47 @@ class LearningTest {
         personal = personal,
         clock = { 42 },
     )
+
+    @Test
+    fun productiveParticlesNeverBecomeCandidatesOrContexts() {
+        learning.policy = { LearningPolicy() }
+        field.type("релиз-то релиз-то извольте-с извольте-с привет привет ")
+        assertEquals(listOf("привет"), model.personal.all().map { it.spelling })
+        assertEquals(emptyList<String>(), learnableContext(listOf("релиз-то"), model))
+        learning.finishField()
+        assertEquals(listOf("привет"), store.read(personalName(Language.Russian)).all().map { it.spelling })
+    }
+
+    @Test
+    fun twoFieldStartsTeachTheEmotesSpellingAndBothUses() {
+        learning.policy = { LearningPolicy() }
+        field.type("Maaaan ")
+        assertNull(model.personal.learned("Maaaan"))
+        assertTrue(model.personal.starts.all().isEmpty())
+        learning.finishField()
+        field.text = ""
+        learning.startField(0, 0)
+        field.type("Maaaan ")
+        assertEquals(Learned("Maaaan", 2, 42), model.personal.learned("Maaaan"))
+        assertEquals(2, model.personal.starts.all().single().count)
+    }
+
+    @Test
+    fun anExplicitLowercaseInitialWinsUntilAnUppercaseMidSentenceUse() {
+        learning.policy = { LearningPolicy() }
+        for (word in listOf("Васян", "васян", "Васян")) {
+            field.text = ""
+            learning.startField(0, 0)
+            field.type("$word ")
+            learning.finishField()
+        }
+        assertEquals(Learned("васян", 3, 42), model.personal.learned("Васян"))
+        field.text = ""
+        learning.startField(0, 0)
+        field.type("тот самый Васян ")
+        assertEquals(Learned("Васян", 4, 42), model.personal.learned("васян"))
+        assertTrue(model.personal.after("самый").isEmpty())
+    }
 
     @Test
     fun anExplicitlyKeptDictionaryWordTeachesItsCase() {

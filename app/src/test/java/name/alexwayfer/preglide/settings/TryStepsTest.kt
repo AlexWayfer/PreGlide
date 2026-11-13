@@ -124,7 +124,7 @@ class TryStepsTest {
     }
 
     @Test
-    fun theButtonIsOnThePagesThatChangeHowTheKeyboardLooksOrTypes() {
+    fun theButtonIsOnTheKeyboardSettingsAndGestureGuidePages() {
         val withButton = SettingsPage.entries.filter { hasTryButton(it.name) }
 
         assertEquals(
@@ -137,6 +137,7 @@ class TryStepsTest {
                 SettingsPage.Input,
                 SettingsPage.Suggestions,
                 SettingsPage.Gestures,
+                SettingsPage.GestureHelp,
             ),
             withButton,
         )

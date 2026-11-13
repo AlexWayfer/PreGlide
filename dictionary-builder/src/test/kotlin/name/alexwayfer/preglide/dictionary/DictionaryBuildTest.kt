@@ -1,6 +1,8 @@
 package name.alexwayfer.preglide.dictionary
 
 import com.sun.net.httpserver.HttpServer
+import name.alexwayfer.preglide.engine.suggest.Dictionary
+import name.alexwayfer.preglide.engine.suggest.NextWords
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -112,6 +114,18 @@ class DictionaryBuildTest {
         assertEquals("ещё\t500000000\nмир\t500000000\n", asset("ru.tsv"))
         assertTrue(asset("ru.next.tsv"), asset("ru.next.tsv").startsWith("еще\t1\t"))
         assertTrue(reports.toString(), reports.any { it == "ru: ё put back in 1 words" })
+    }
+
+    @Test
+    fun correctedYoFrequenciesKeepNextWordReferences() {
+        build("мир колеса колеса колёса мир мир мир").run(corpus.copy(size = 3))
+        val dictionary = Dictionary.read(asset("ru.tsv").reader())
+        val next = NextWords.read(asset("ru.next.tsv").reader(), dictionary)
+
+        assertEquals(listOf("колёса", "колеса"), dictionary.complete("колеса", 2))
+        assertEquals(428_571_429L, dictionary.frequency("колеса") + dictionary.frequency("колёса"))
+        assertEquals(listOf("колеса"), next.after("мир"))
+        assertEquals(listOf("мир"), next.after("колёса"))
     }
 
     @Test

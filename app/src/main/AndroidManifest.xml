@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Release checks and APK downloads. Typing and predictions stay on the device. -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- APK releases outside Google Play use the system installer for user-confirmed updates. -->
+    <uses-permission
+        android:name="android.permission.REQUEST_INSTALL_PACKAGES"
+        tools:ignore="RequestInstallPackagesPolicy" />
 
     <!-- The notice that the app ran into a problem, with a button to send the report. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -17,7 +21,10 @@
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- APK releases outside Google Play can offer fresh screenshots without opening a picker each time. -->
+    <uses-permission
+        android:name="android.permission.READ_MEDIA_IMAGES"
+        tools:ignore="PhotoAndVideoPolicy" />
     <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
 
     <application
@@ -29,6 +36,9 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.PreGlide">
+        <!-- MIUI's opt-out from its own forced dark mode. PreGlide provides both themes. -->
+        <meta-data android:name="force_dark_google" android:value="true" />
+
         <activity
             android:name=".settings.SettingsActivity"
             android:exported="true"

@@ -6,27 +6,30 @@ package name.alexwayfer.preglide.engine.suggest
  * "D" of ":D", or an initial.
  */
 fun isLearnable(word: String, model: LanguageModel): Boolean =
-    word.length > 1 || model.dictionary.spellingOf(word) != null
+    !hasProductiveParticle(word) && (word.length > 1 || model.dictionary.spellingOf(word) != null)
 
 /**
  * How to keep [typed], a word the user finished, so it is suggested in its usual case: the user's spelling of a
  * dictionary word takes priority over the dictionary's. Otherwise, within a sentence, as typed, which keeps
- * a name's capital. At a [sentenceStart] the capital tells nothing: the spelling the user taught before stays, and
- * a new word loses the capital, unless it is in caps all through, as an abbreviation. Nor do caps on a word the user
- * taught before, as "КРИНЖ" for emphasis: its spelling stays. An explicitly [kept] spelling overrides those choices,
- * except for a sentence's initial capital alone, which still tells nothing about the word's usual case.
+ * a name's capital. A new word keeps its first spelling. A sentence's capital or caps for emphasis preserve a
+ * spelling already seen, including [candidate]. A deliberate lowercase initial can teach a different spelling.
  */
-fun learnedSpelling(typed: String, sentenceStart: Boolean, model: LanguageModel, kept: Boolean = false): String {
+fun learnedSpelling(
+    typed: String,
+    sentenceStart: Boolean,
+    model: LanguageModel,
+    kept: Boolean = false,
+    candidate: String? = null,
+): String {
     val dictionary = model.dictionary.spellingOf(typed)
-    val taught = model.personal.learned(typed)?.spelling?.takeIf {
-        sentenceStart || isInCaps(typed) || dictionary != null
+    val taught = (model.personal.learned(typed)?.spelling ?: candidate)?.takeIf {
+        sentenceStart && typed.firstOrNull()?.isUpperCase() == true || isInCaps(typed) || dictionary != null
     }
     val known = taught ?: dictionary
+    model.personal.editedSpelling(typed)?.let { return it }
     return when {
         kept && (!sentenceStart || isInCaps(typed)) -> typed
-        known != null -> known
-        !sentenceStart || typed.drop(1).any { it.isUpperCase() } -> typed
-        else -> typed.replaceFirstChar { it.lowercaseChar() }
+        else -> known ?: typed
     }
 }
 
@@ -36,5 +39,6 @@ fun learnedSpelling(typed: String, sentenceStart: Boolean, model: LanguageModel,
  */
 fun preferredSpelling(typed: String, model: LanguageModel): String {
     val spelling = model.personal.learned(typed)?.spelling ?: model.dictionary.spellingOf(typed) ?: typed
-    return casedLike(spelling, typed)
+    val preferred = casedLike(spelling, typed)
+    return if (fixesSecondCapital(typed, preferred)) typed else preferred
 }

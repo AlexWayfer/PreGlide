@@ -1,8 +1,12 @@
 package name.alexwayfer.preglide.ime
 
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextDecoration
 import name.alexwayfer.preglide.engine.emoji.emojiForWord
 import name.alexwayfer.preglide.engine.emoji.wordBeforeEmoji
 import name.alexwayfer.preglide.engine.suggest.wordRest
+import name.alexwayfer.preglide.engine.suggest.fixesSecondCapital
 
 /** The slot of the strip the emoji for a word take, in place of its word: the right one, the least likely word. */
 const val EMOJI_SLOT = 2
@@ -10,7 +14,12 @@ const val EMOJI_SLOT = 2
 /** What a slot of the strip shows: a word, or the emoji for the word typed. */
 sealed interface SlotContent {
     /** A [word] to pick, which the slot shows as [label]. */
-    data class Word(val word: String, val label: String = word) : SlotContent
+    data class Word(val word: String, val label: String = word, val markSecond: Boolean = false) : SlotContent {
+        val styledLabel = buildAnnotatedString {
+            append(label)
+            if (markSecond) addStyle(SpanStyle(textDecoration = TextDecoration.Underline), 1, 2)
+        }
+    }
 
     data class Emoji(val emoji: List<String>) : SlotContent
 }
@@ -30,7 +39,11 @@ fun stripSlotContents(
         if (slot == EMOJI_SLOT && emoji.isNotEmpty()) {
             SlotContent.Emoji(emoji)
         } else {
-            word?.let { SlotContent.Word(it, shownInStrip(it, glued)) }
+            word?.let {
+                val label = shownInStrip(it, glued)
+                val markSecond = typedWord != null && label == it && fixesSecondCapital(typedWord, it)
+                SlotContent.Word(it, label, markSecond)
+            }
         }
     }
 

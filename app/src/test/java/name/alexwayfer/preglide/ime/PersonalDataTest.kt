@@ -49,14 +49,14 @@ class PersonalDataTest {
     }
 
     @Test
-    fun refreshingMergesWhatTheOtherDevicesLearnedSinceIntoTheLoadedWords() {
+    fun refreshingMergesWhatTheOtherDevicesLearnedSinceIntoTheLoadedWords() = runBlocking {
         var devices = emptyMap<String, PersonalWords>()
         val withOthers = PersonalData(store, CoroutineScope(now), now) { devices }
         val words = withOthers.load(russian)
         val changes = withOthers.changes.value
 
         devices = mapOf("pc" to PersonalWords().apply { learn("котлин", previous = null, time = 9) })
-        withOthers.refreshOthers()
+        withOthers.refreshOthers(listOf(russian), downloadsChanged = true)
 
         assertEquals(Learned("котлин", 1, 9), words.learned("котлин"))
         assertTrue(withOthers.changes.value > changes)

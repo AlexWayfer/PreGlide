@@ -117,6 +117,7 @@ class GlideTyping(
      * word went in.
      */
     override fun glided(glide: Glide) {
+        suggestions.periodSpace.forget()
         suggestions.choiceSpace.forget()
         keyboard.removing = null
         val reading = if (afterGlides.reading) null else currentReading()

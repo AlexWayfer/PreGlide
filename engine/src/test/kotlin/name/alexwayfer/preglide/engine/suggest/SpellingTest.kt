@@ -135,6 +135,8 @@ class SpellingTest {
     fun `the shipped dictionaries know common words and correct typos quickly`() {
         val assets = File("../app/src/main/assets/dictionaries")
         val russian = File(assets, "ru.tsv").reader().use(Dictionary::read)
+        // The app builds the search tree while loading the model, before the spell checker can use it.
+        russian.prepareWalks()
         val spelling = Spelling(Language.Russian, russian, emptyList(), emptySet(), emptySet())
         val words = listOf("иронично", "Ещё", "кто-нибудь", "сегодня", "приветствую")
         words.forEach { assertNull(it, spelling.check(it, 5)) }

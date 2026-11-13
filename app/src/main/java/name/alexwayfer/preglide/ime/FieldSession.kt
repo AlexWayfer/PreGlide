@@ -58,6 +58,7 @@ class FieldSession(
         learning.startField(start, end)
         suggestions.ownSpace.forget()
         suggestions.choiceSpace.forget()
+        suggestions.periodSpace.forget()
         suggestions.taps.clear()
         suggestions.corrections.clear()
         suggestions.wordAhead.placed()
@@ -72,7 +73,10 @@ class FieldSession(
         // Anything but the keyboard's own edit puts autocorrect's change past undoing, and a glide's past swapping,
         // and places the cursor anew.
         if (!ours) {
-            if (moved) suggestions.choiceSpace.forget()
+            if (moved) {
+                suggestions.periodSpace.forget()
+                suggestions.choiceSpace.forget()
+            }
             suggestions.corrections.forget()
             suggestions.glides.forget()
             suggestions.wordAhead.placed()
@@ -110,6 +114,7 @@ class FieldSession(
      * being typed goes on, its letters typed in either language.
      */
     fun languageChanged(language: Language?) {
+        suggestions.periodSpace.forget()
         if (language != null) keyboard.language = language
         // The taps lie on the other language's keys, which are not where this one's are.
         suggestions.taps.clear()

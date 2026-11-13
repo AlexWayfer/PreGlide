@@ -6,6 +6,9 @@ import name.alexwayfer.preglide.engine.layout.KeyAction
 import name.alexwayfer.preglide.engine.layout.Language
 import name.alexwayfer.preglide.engine.suggest.Dictionary
 import name.alexwayfer.preglide.engine.suggest.LanguageModel
+import name.alexwayfer.preglide.engine.suggest.LearningPolicy
+import name.alexwayfer.preglide.engine.suggest.pendingSpelling
+import name.alexwayfer.preglide.engine.suggest.learn
 import name.alexwayfer.preglide.testDispatchers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -58,7 +61,7 @@ class AutocorrectTest {
         emails = { null },
         personal = personal,
         clock = { 42 },
-    )
+    ).apply { policy = { LearningPolicy(uses = 1) } }
     private val autocorrect = Autocorrect(suggestions, learning)
 
     /** Types [typed] as the keyboard does, a key at a time, and reports each edit back as the field does. */
@@ -86,6 +89,48 @@ class AutocorrectTest {
     private fun reported() {
         learning.selectionChanged(field.text.length, field.text.length)
         suggestions.update()
+    }
+
+    @Test
+    fun anExtraCapitalInALearnedWordOffersBothSpellingsAndCanBeUndone() {
+        model.personal.learn("Wokege", null, 1)
+        type("WOkege")
+        assertEquals("WOkege", keyboard.typedWord)
+        assertEquals("Wokege", keyboard.suggestions.firstOrNull())
+        assertEquals("Wokege", keyboard.correction)
+        type(",")
+        assertEquals("Wokege,", field.text)
+        backspace()
+        assertEquals("WOkege", field.text)
+        type(" ")
+        assertEquals("WOkege ", field.text)
+    }
+
+    @Test
+    fun anExtraCapitalInADictionaryWordIsCorrectedOnSpace() {
+        type("ПРивет ")
+        assertEquals("Привет ", field.text)
+    }
+
+    @Test
+    fun anExtraCapitalCanBeFixedManuallyWithAutocorrectOff() {
+        corrects = false
+        type("ПРивет")
+        assertEquals("Привет", keyboard.suggestions.firstOrNull())
+        assertNull(keyboard.correction)
+        type(" ")
+        assertEquals("ПРивет ", field.text)
+    }
+
+    @Test
+    fun aSecondCapitalInsideAWordOrInAKeptSpellingIsNotAutocorrected() {
+        field.after = "ик"
+        type("ПРивет ")
+        assertEquals("ПРивет ", field.text)
+        field.after = ""
+        model.personal.learn("Wokege", null, 1, kept = true)
+        type("WOkege ")
+        assertEquals("ПРивет WOkege ", field.text)
     }
 
     @Test
@@ -132,6 +177,19 @@ class AutocorrectTest {
 
         assertEquals("Как пртвет как ", field.text)
         assertEquals(1, model.personal.learned("пртвет")?.kept)
+    }
+
+    @Test
+    fun keepingAnAutocorrectedSpellingOnceLeavesItPending() {
+        learning.policy = { LearningPolicy() }
+        type("Как пртвет ")
+        backspace()
+        type(" как ")
+
+        assertEquals("Как пртвет как ", field.text)
+        assertNull(model.personal.learned("пртвет"))
+        assertEquals("пртвет", model.personal.pendingSpelling("пртвет", 42, LearningPolicy()))
+        assertNull(model.personal.pendingSpelling("привет", 42, LearningPolicy()))
     }
 
     @Test

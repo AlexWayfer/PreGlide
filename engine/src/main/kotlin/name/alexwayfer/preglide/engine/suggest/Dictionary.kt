@@ -51,12 +51,13 @@ class Dictionary private constructor(
     fun complete(prefix: String, limit: Int): List<String> = completeScored(prefix, limit).map { it.word }
 
     /** [complete] with each word's frequency, per billion words. */
-    fun completeScored(prefix: String, limit: Int): List<Scored> {
+    fun completeScored(prefix: String, limit: Int, preferred: (String) -> Boolean = { false }): List<Scored> {
         if (prefix.isEmpty() || limit <= 0) return emptyList()
         val best = ArrayList<Int>(limit + 1)
+        val order = compareByDescending<Int> { preferred(words[it]) }.thenByDescending { frequencies[it] }
         var index = firstAtOrAfter(prefix)
         while (index < words.size && startsWithFolded(words[index], prefix)) {
-            if (keepsTypedYo(words[index], prefix)) insertByFrequency(best, index, limit)
+            if (keepsTypedYo(words[index], prefix)) insertByFrequency(best, index, limit, order)
             index++
         }
         return best.map { Scored(words[it], frequencies[it]) }
@@ -97,10 +98,9 @@ class Dictionary private constructor(
     }
 
     /** Puts [index] into [best], kept sorted by frequency and at most [limit] long; earlier words win ties. */
-    private fun insertByFrequency(best: MutableList<Int>, index: Int, limit: Int) {
-        val frequency = frequencies[index]
+    private fun insertByFrequency(best: MutableList<Int>, index: Int, limit: Int, order: Comparator<Int>) {
         var position = best.size
-        while (position > 0 && frequencies[best[position - 1]] < frequency) position--
+        while (position > 0 && order.compare(index, best[position - 1]) < 0) position--
         if (position < limit) {
             best.add(position, index)
             if (best.size > limit) best.removeAt(best.lastIndex)

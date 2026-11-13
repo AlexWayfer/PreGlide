@@ -14,6 +14,7 @@ enum class WordOrder(@param:StringRes val label: Int) {
 
     /** As a dictionary has them, with case and ё not counted. */
     Alphabet(R.string.learned_order_alphabet),
+    Recent(R.string.learned_order_recent),
 }
 
 private val alphabetical = Comparator<Learned> { a, b -> compareFolded(a.spelling, b.spelling) }
@@ -24,6 +25,12 @@ private val mostTyped = compareByDescending<Learned> { it.count }.thenByDescendi
 fun inOrder(words: List<Learned>, order: WordOrder): List<Learned> = when (order) {
     WordOrder.Frequency -> words.sortedWith(mostTyped)
     WordOrder.Alphabet -> words.sortedWith(alphabetical)
+    WordOrder.Recent -> words.sortedWith(compareByDescending<Learned> { it.lastUsed }.then(alphabetical))
+}
+
+internal fun matchingWords(words: List<Learned>, query: String): List<Learned> {
+    val term = query.trim()
+    return if (term.isEmpty()) words else words.filter { it.spelling.contains(term, ignoreCase = true) }
 }
 
 /** What tells a learned word apart in the list: words are learned by their lowercase, so no two share it. */

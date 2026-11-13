@@ -16,7 +16,7 @@ class LearningTest {
         assertEquals("Привет", learnedSpelling("Привет", sentenceStart = false, model, kept = true))
         assertEquals("ООО", learnedSpelling("ООО", sentenceStart = true, model, kept = true))
         assertEquals("привет", learnedSpelling("Привет", sentenceStart = true, model, kept = true))
-        assertEquals("кринж", learnedSpelling("Кринж", sentenceStart = true, model, kept = true))
+        assertEquals("Кринж", learnedSpelling("Кринж", sentenceStart = true, model, kept = true))
     }
 
     @Test
@@ -65,8 +65,8 @@ class LearningTest {
     }
 
     @Test
-    fun `a new word at a sentence start loses the capital, unless all in caps`() {
-        assertEquals("пиздец", learnedSpelling("Пиздец", sentenceStart = true, model))
+    fun aNewWordAtASentenceStartKeepsItsCase() {
+        assertEquals("Пиздец", learnedSpelling("Пиздец", sentenceStart = true, model))
         assertEquals("ЛОЛ", learnedSpelling("ЛОЛ", sentenceStart = true, model))
     }
 

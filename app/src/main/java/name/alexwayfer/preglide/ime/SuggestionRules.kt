@@ -26,7 +26,7 @@ fun offersSuggestions(inputType: Int): Boolean =
         inputType and InputType.TYPE_MASK_VARIATION !in passwordVariations
 
 /** Addresses are not words of a language: learning them would teach the dictionary their parts. */
-private val addressVariations = setOf(
+internal val addressVariations = setOf(
     InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS,
     InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS,
     InputType.TYPE_TEXT_VARIATION_URI,

@@ -94,6 +94,28 @@ internal class LearnedNext(private val limit: Int = CONTEXT_LIMIT) {
         }
     }
 
+    /** Detaches uses affected by an edit, including uses whose preceding words change. */
+    fun takeEdited(edit: WordEdit): List<WordUse> = buildList {
+        for ((index, table) in tables.withIndex()) {
+            for ((context, after) in table) {
+                val moveContext = edit.changesContext(context)
+                after.entries.removeAll { (_, word) ->
+                    (moveContext || edit.affects(word.spelling)).also { move ->
+                        if (move) {
+                            add(WordUse(context, word))
+                            sizes[index]--
+                        }
+                    }
+                }
+            }
+            table.values.removeAll { it.isEmpty() }
+        }
+    }
+
+    val entries: Sequence<WordUse> get() = tables.asSequence().flatMap { table ->
+        table.asSequence().flatMap { (context, after) -> after.values.asSequence().map { WordUse(context, it) } }
+    }
+
     /** Puts back what [forget] gave, added up with what was learned since after the same contexts. */
     fun restore(forgotten: List<Pair<String, Learned>>) {
         for ((context, next) in forgotten) put(context, next, ::restored)
@@ -135,17 +157,6 @@ internal class LearnedNext(private val limit: Int = CONTEXT_LIMIT) {
         if (length > 1 && sizes[length - 1] > limit) prune(length)
     }
 
-    /** Writes every next word, a line each, with [type] first: what [put] takes back from each. */
-    fun write(out: Appendable, type: String) {
-        for (table in tables) {
-            for ((context, after) in table) {
-                for ((spelling, count, lastUsed) in after.values) {
-                    out.append("$type\t$context\t$spelling\t$count\t$lastUsed\n")
-                }
-            }
-        }
-    }
-
     /** Drops the next words after contexts of [length] typed the fewest times, the oldest first, down to the limit. */
     private fun prune(length: Int) {
         val table = tables[length - 1]
@@ -162,11 +173,18 @@ internal class LearnedNext(private val limit: Int = CONTEXT_LIMIT) {
     private class Entry(val context: String, val key: String, val learned: Learned)
 }
 
+/** Writes every next word, a line each, with [type] first. */
+internal fun LearnedNext.write(out: Appendable, type: String) {
+    for ((context, word) in entries) {
+        out.append("$type\t$context\t${word.spelling}\t${word.count}\t${word.lastUsed}\n")
+    }
+}
+
 /**
  * For each length of [context] up to [LONGEST_CONTEXT], whether the user typed it before on this device, and [word]
  * after it; asked before [word] is learned after it.
  */
-fun PersonalWords.seen(word: String, context: List<String>): List<ContextSeen> = next.seen(word, context)
+fun PersonalWords.seen(word: String, context: List<String>): List<ContextSeen> = others.seen(word, context)
 
 /** The lengths of context that [context] has, up to [LONGEST_CONTEXT]. */
 private fun lengthsOf(context: List<String>): IntRange = 1..minOf(context.size, LONGEST_CONTEXT)

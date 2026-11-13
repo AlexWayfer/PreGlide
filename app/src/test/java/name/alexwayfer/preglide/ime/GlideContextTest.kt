@@ -7,6 +7,7 @@ import name.alexwayfer.preglide.engine.layout.Language
 import name.alexwayfer.preglide.engine.predict.Vocabulary
 import name.alexwayfer.preglide.engine.suggest.Dictionary
 import name.alexwayfer.preglide.engine.suggest.LanguageModel
+import name.alexwayfer.preglide.engine.suggest.LearningPolicy
 import name.alexwayfer.preglide.engine.suggest.predictionOver
 import name.alexwayfer.preglide.testDispatchers
 import org.junit.Assert.assertEquals
@@ -76,7 +77,9 @@ class GlideContextTest {
     }
 
     private fun learning() =
-        Learning(field, { Language.Russian }, { suggestions.model(it) }, { null }, personal, clock = { 0 })
+        Learning(field, { Language.Russian }, { suggestions.model(it) }, { null }, personal, clock = { 0 }).apply {
+            policy = { LearningPolicy(uses = 1) }
+        }
     @Test
     fun aGlideBegunBeforeThePredictionCameReadsWithItOnceItCame() {
         // The first update loads the prediction model; the strip waits for its answer.

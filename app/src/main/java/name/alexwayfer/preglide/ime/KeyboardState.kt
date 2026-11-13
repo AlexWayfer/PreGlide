@@ -9,14 +9,15 @@ import name.alexwayfer.preglide.engine.layout.Page
 
 class KeyboardState {
     /**
-     * The language of the letters. Switching it shows them, as the user switches to type in the other language; a
-     * keypad stays, as its field takes no letters.
+     * The language of the letters. Switching it shows them and turns off caps lock.
+     * A keypad stays, as its field takes no letters.
      */
     var language: Language
         get() = shownLanguage
         set(value) {
             if (value != shownLanguage) {
                 if (!page.keypad) page = Page.Letters
+                if (shift == ShiftState.Locked) shift = ShiftState.Off
                 languageSwiped = swipingLanguage
                 swipingLanguage = null
             }
@@ -73,6 +74,9 @@ class KeyboardState {
      * and picking it keeps it so, as the user's own word. Null otherwise.
      */
     var typedWord by mutableStateOf<String?>(null)
+
+    /** Whether [typedWord] is known and not removed, so holding it can remove it from suggestions. */
+    var typedWordRemovable by mutableStateOf(false)
 
     /**
      * The suggestion autocorrect puts in place of the word being typed when the user ends it, shown first and
@@ -235,7 +239,7 @@ enum class ShiftState {
     /** Capitalizes the next letter only. */
     Once,
 
-    /** Caps lock, until shift is pressed again. */
+    /** Caps lock. */
     Locked,
     ;
 

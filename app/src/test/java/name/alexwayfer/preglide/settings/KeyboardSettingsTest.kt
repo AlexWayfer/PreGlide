@@ -53,6 +53,36 @@ class KeyboardSettingsTest {
     }
 
     @Test
+    fun wordLearningLimitsPersistTogether() {
+        val file = File(folder.root, "settings.preferences_pb")
+        assertNull(learningPolicy("256", "30"))
+        assertNull(learningPolicy("two", "30"))
+        assertNull(learningPolicy("2", "0"))
+        val policy = checkNotNull(learningPolicy("3", "3650"))
+        withSettings(file) { settings ->
+            assertEquals(2, settings.learning.policy.value.uses)
+            assertEquals(30, settings.learning.policy.value.days)
+            settings.learning.setPolicy(policy)
+        }
+        withSettings(file) { settings -> assertEquals(policy, settings.learning.policy.first { it == policy }) }
+    }
+
+    @Test
+    fun doubleSpacePeriodIsOffAndItsChoicePersists() {
+        val file = File(folder.root, "settings.preferences_pb")
+        withSettings(file) { settings ->
+            assertEquals(false, settings.punctuation.doubleSpacePeriod.value)
+            settings.punctuation.setDoubleSpacePeriod(true)
+            assertEquals(true, settings.punctuation.doubleSpacePeriod.first { it })
+        }
+        withSettings(file) { settings ->
+            assertEquals(true, settings.punctuation.doubleSpacePeriod.first { it })
+            settings.punctuation.setDoubleSpacePeriod(false)
+            assertEquals(false, settings.punctuation.doubleSpacePeriod.first { !it })
+        }
+    }
+
+    @Test
     fun screenshotsAreOffUntilTurnedOn() {
         val file = File(folder.root, "settings.preferences_pb")
 

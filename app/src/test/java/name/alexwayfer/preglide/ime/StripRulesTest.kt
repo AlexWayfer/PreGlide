@@ -67,6 +67,23 @@ class StripRulesTest {
         assertFalse(isRemovable("кринж", "кринж"))
         assertTrue(isRemovable("кринжовый", "кринж"))
         assertTrue(isRemovable("кринж", null))
+        assertTrue(isRemovable("кринж", "кринж", typedWordRemovable = true))
+        assertFalse(isRemovable(null, "кринж"))
+        assertFalse(isRemovable(null, null))
+    }
+
+    @Test
+    fun onlyKnownWordsNotAlreadyRemovedCanBeRemovedWhenTyped() {
+        val model = LanguageModel(Dictionary.parse(sequenceOf("привет\t30")))
+        model.personal.learn("бер", previous = null, time = 0)
+
+        assertTrue(typedWordRemovable("Бер", model))
+        assertTrue(typedWordRemovable("Привет", model))
+        assertFalse(typedWordRemovable("бе", model))
+        assertFalse(typedWordRemovable(null, model))
+        assertFalse(typedWordRemovable("бер", null))
+        model.personal.remove("привет", time = 1)
+        assertFalse(typedWordRemovable("Привет", model))
     }
 
     @Test

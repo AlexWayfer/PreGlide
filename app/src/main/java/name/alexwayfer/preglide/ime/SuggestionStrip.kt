@@ -216,7 +216,7 @@ private fun SuggestionRow(
         Row(Modifier.fillMaxSize()) {
             shown.slots.forEachIndexed { slot, content ->
                 val word = (content as? SlotContent.Word)?.word
-                val ask = onAskToRemove.takeIf { isRemovable(word, shown.typedWord) }
+                val ask = onAskToRemove.takeIf { isRemovable(word, shown.typedWord, shown.typedWordRemovable) }
                 val look = slotLook(slot, word, shown.correction, shown.glidedWord)
                 SuggestionSlot(content, look, onPick, onEmoji, ask, Modifier.weight(1f).fillMaxHeight())
             }
@@ -276,7 +276,7 @@ private fun SuggestionSlot(
                 Box(Modifier.fillMaxSize().padding(horizontal = 4.dp), contentAlignment = Alignment.Center) {
                     if (shown is SlotContent.Word) {
                         BasicText(
-                            text = shown.label,
+                            text = shown.styledLabel,
                             style = style,
                             maxLines = 1,
                             autoSize = TextAutoSize.StepBased(minFontSize = SmallestWordSize, maxFontSize = WordSize),

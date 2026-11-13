@@ -70,75 +70,48 @@ fun predictedScores(
     typed: String,
     context: List<String>,
     limit: Int,
+): List<Scored> = predictedScores(model, next, SuggestionInput(typed, preferCapital = false), context, limit)
+
+/** [predictedScores] with a case preference applied before limiting candidates. */
+fun predictedScores(
+    model: LanguageModel,
+    next: NextTokens,
+    input: SuggestionInput,
+    context: List<String>,
+    limit: Int,
 ): List<Scored> {
+    val typed = input.typed
+    val preferCapital = input.preferCapital
     val mix = NextMix(model, next, context)
     val wanted = limit + model.personal.removedCount
-    val fromModel = likeliestWords(next, typed, wanted).map { (id, probability) ->
-        Scored(next.prediction.spellings[id], perBillion(probability * mix.modelShare))
-    }
+    val fromModel = likeliestWords(next, typed, wanted) { preferCapital && hasWordCapital(it, model.personal) }
+        .map { (id, probability) ->
+            Scored(next.prediction.spellings[id], perBillion(probability * mix.modelShare))
+        }
     val fromUser = mix.after.filter { startsLikeTyped(it.spelling, typed) }.map {
         Scored(it.spelling, perBillion(mix.usersShare(it.spelling)))
     }
     // With nothing typed yet, the next word is the model's and the user's after the words before alone.
     if (typed.isEmpty()) return fromModel + fromUser
-    val listed = fromModel + fromUser + unknownWords(model.dictionary, mix, typed, wanted)
+    val listed = fromModel + fromUser + unknownWords(model, mix, typed, wanted, preferCapital)
     return listed + learnedCompletions(model, mix, typed, listed)
 }
 
 /**
- * The words of [dictionary] beyond the vocabulary of [mix]'s prediction that complete [typed], up to [limit] of the
+ * The words of [model]'s dictionary beyond the vocabulary of [mix]'s prediction that complete [typed], up to [limit]
  * most frequent: each takes its share of the unknown token's probability, scaled as the model's own words are.
  */
-private fun unknownWords(dictionary: Dictionary, mix: NextMix, typed: String, limit: Int): List<Scored> {
+private fun unknownWords(
+    model: LanguageModel,
+    mix: NextMix,
+    typed: String,
+    limit: Int,
+    preferCapital: Boolean,
+): List<Scored> {
     if (!mix.hasUnknown) return emptyList()
-    return dictionary.completeScored(typed, limit)
+    return model.dictionary.completeScored(typed, limit) { preferCapital && hasWordCapital(it, model.personal) }
         .filter { mix.isUnknown(it.word) }
         .map { Scored(it.word, perBillion(mix.unknownShare(it.score) * mix.modelShare)) }
-}
-
-/**
- * Up to [limit] ids of the prediction's words that start with [typed], with ё where it has ё (see [keepsTypedYo]),
- * any for an empty [typed], with their probabilities in [next], the likeliest first. The fixed tokens are no words
- * to suggest. Only the words with
- * that start are looked at, as they lie next to each other in the search order: a letter typed costs a look at a
- * few of the vocabulary's words, not at all of them.
- */
-fun likeliestWords(next: NextTokens, typed: String, limit: Int): List<Pair<Int, Float>> {
-    val best = ArrayList<Int>(limit + 1)
-    val prediction = next.prediction
-    val order = prediction.searchOrder
-    var position = firstStartingWith(prediction, typed)
-    while (position < order.size && startsWithFolded(wordOf(prediction, order[position]), typed)) {
-        if (keepsTypedYo(wordOf(prediction, order[position]), typed)) {
-            insertByScore(best, order[position], next.probabilities, limit)
-        }
-        position++
-    }
-    return best.map { it to next.probabilities[it] }
-}
-
-/** The first place in [prediction]'s search order whose word comes at or after [typed] as a search sees them. */
-private fun firstStartingWith(prediction: Prediction, typed: String): Int {
-    val order = prediction.searchOrder
-    var low = 0
-    var high = order.size
-    while (low < high) {
-        val middle = (low + high) ushr 1
-        if (compareFolded(wordOf(prediction, order[middle]), typed) < 0) low = middle + 1 else high = middle
-    }
-    return low
-}
-
-private fun wordOf(prediction: Prediction, id: Int): String = prediction.vocabulary.words[id - Vocabulary.FIXED.size]
-
-/** Puts [id] into [best], kept sorted by [scores] and at most [limit] long. */
-private fun insertByScore(best: MutableList<Int>, id: Int, scores: FloatArray, limit: Int) {
-    var position = best.size
-    while (position > 0 && scores[best[position - 1]] < scores[id]) position--
-    if (position < limit) {
-        best.add(position, id)
-        if (best.size > limit) best.removeAt(best.lastIndex)
-    }
 }
 
 private fun perBillion(probability: Double): Long = (probability * PER_BILLION).roundToLong()

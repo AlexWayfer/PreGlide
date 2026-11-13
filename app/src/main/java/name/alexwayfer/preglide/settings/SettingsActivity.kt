@@ -204,9 +204,7 @@ private fun Pages(navigation: NavHostController) {
             GesturesPage(app.settings, onBack = { back(SettingsPage.Gestures) })
         }
         wordPages(app, open, back)
-        composable(SettingsPage.Licenses.name) {
-            LicensesPage(onBack = { back(SettingsPage.Licenses) })
-        }
+        helpPages(app.settings, open, back)
         composable(SettingsPage.Updates.name) {
             UpdatesPage(onBack = { back(SettingsPage.Updates) }, onAccess = { open(SettingsPage.Sync) })
         }
@@ -303,10 +301,10 @@ private fun MainPage(onOpen: (SettingsPage) -> Unit) {
                 SyncMenuEntry(onOpen)
                 UpdatesMenuEntry(onOpen)
                 PageEntry(
-                    R.drawable.ic_license,
-                    stringResource(R.string.settings_licenses),
-                    stringResource(R.string.settings_licenses_hint),
-                    { onOpen(SettingsPage.Licenses) },
+                    R.drawable.ic_lightbulb,
+                    stringResource(R.string.settings_help),
+                    stringResource(R.string.settings_help_hint),
+                    { onOpen(SettingsPage.Help) },
                 )
                 // With the whole log: for a problem the app did not notice itself.
                 ActionEntry(

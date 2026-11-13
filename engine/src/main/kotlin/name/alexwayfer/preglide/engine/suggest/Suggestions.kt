@@ -31,9 +31,19 @@ fun suggestions(
     count: Int,
     next: NextTokens? = null,
     touches: Touches? = null,
+): List<String> = suggestions(SuggestionInput(textBefore), model, count, next, touches)
+
+/** [suggestions] with the case preference gathered by the keyboard before its one-letter shift turns off. */
+fun suggestions(
+    input: SuggestionInput,
+    model: LanguageModel,
+    count: Int,
+    next: NextTokens? = null,
+    touches: Touches? = null,
 ): List<String> {
-    hyphenSplit(textBefore)?.let { return hyphenSuggestions(textBefore, it, model, count, next) }
-    val typed = currentWord(textBefore)
+    val textBefore = input.text
+    hyphenSplit(textBefore)?.let { return hyphenSuggestions(input, it, model, count, next) }
+    val typed = input.typed
     // Next words follow a space, or a mark a word goes a space after: one chosen there brings its space along.
     val predicting = typed.isNotEmpty() || textBefore.lastOrNull() == ' ' || endsWithMarkBeforeSpace(textBefore)
     val context = if (predicting) wordContext(textBefore, RANKED_CONTEXT) else emptyList()
@@ -42,30 +52,32 @@ fun suggestions(
     val words = when {
         !predicting -> emptyList()
         next != null -> strongestFirst(
-            predictedScores(model, next, typed, context, count) +
+            predictedScores(model, next, input, context, count) +
                 typing?.let { meantPredicted(model, next, context, it) }.orEmpty(),
             model.personal,
         )
-        else -> pairedWords(model, typed, context, count, typing)
+        else -> pairedWords(model, input, context, count, typing)
     }
-    return words
+    val ordered = if (input.preferCapital) capitalWordsFirst(words, typed, model.personal) else words
+    return ordered
         .distinctBy { it.lowercase(Locale.ROOT) }
         .take(count)
         .map { casedLike(it, typed) }
 }
 
 /**
- * The words known to come after [context], the words before, that start with [typed], then the most frequent
+ * The words known to come after [context] that start with [input]'s typed word, then the most frequent
  * completions of it, with the words the user may have meant by [typing] among them.
  */
 private fun pairedWords(
     model: LanguageModel,
-    typed: String,
+    input: SuggestionInput,
     context: List<String>,
     count: Int,
     typing: Typing?,
 ): List<String> =
-    nextWords(model, context).filter { startsLikeTyped(it, typed) } + completions(model, typed, count, typing)
+    nextWords(model, context).filter { startsLikeTyped(it, input.typed) } +
+        completions(model, input.typed, count, typing, input.preferCapital)
 
 /**
  * The words after [context], the dictionary's after its last word and the user's, the strongest first. Each use of
@@ -82,10 +94,18 @@ private fun nextWords(model: LanguageModel, context: List<String>): List<String>
  * Up to [count] completions of [typed], the dictionary's and the user's, and the words the user may have meant by
  * [typing], the strongest first.
  */
-internal fun completions(model: LanguageModel, typed: String, count: Int, typing: Typing?): List<String> {
+internal fun completions(
+    model: LanguageModel,
+    typed: String,
+    count: Int,
+    typing: Typing?,
+    preferCapital: Boolean = false,
+): List<String> {
     if (typed.isEmpty()) return emptyList()
     // Removed words take room among the dictionary's best; asking for more leaves enough after them.
-    val dictionary = model.dictionary.completeScored(typed, count + model.personal.removedCount)
+    val dictionary = model.dictionary.completeScored(typed, count + model.personal.removedCount) {
+        preferCapital && hasWordCapital(it, model.personal)
+    }
     val known = dictionary.map { it.word.lowercase(Locale.ROOT) }.toSet()
     // A learned word beyond the dictionary's best brings its frequency along; one among them already has it.
     val personal = model.personal.completions(typed).map { learned ->
@@ -109,24 +129,6 @@ internal fun strongestFirst(candidates: List<Scored>, personal: PersonalWords): 
         }
     }
     return merged.values.sortedWith(compareByDescending<Scored> { it.score }.thenBy { it.word }).map { it.word }
-}
-
-/**
- * [word] in the case the user types it in: in caps when [typed] is in caps, with a capital first letter when
- * [typed] starts with one. Otherwise [word] keeps its own case, so a name stays capitalized; so it does when
- * [typed] is its own start, case and all, as "TD" of "TDLib", which only follows the word's capitals.
- */
-fun casedLike(word: String, typed: String): String = when {
-    word.startsWith(typed) -> word
-    isInCaps(typed) -> word.uppercase()
-    typed.firstOrNull { it.isLetter() }?.isUpperCase() == true -> word.replaceFirstChar { it.uppercaseChar() }
-    else -> word
-}
-
-/** Whether [word] is in caps: two letters at least, all capitals. */
-internal fun isInCaps(word: String): Boolean {
-    val letters = word.filter { it.isLetter() }
-    return letters.length > 1 && letters.all { it.isUpperCase() }
 }
 
 /**

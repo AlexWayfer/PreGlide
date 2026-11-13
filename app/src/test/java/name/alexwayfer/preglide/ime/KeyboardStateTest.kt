@@ -100,6 +100,34 @@ class KeyboardStateTest {
     }
 
     @Test
+    fun switchingTheLanguageTurnsOffCapsLock() {
+        val state = KeyboardState().apply { shift = ShiftState.Locked }
+
+        state.language = Language.English
+
+        assertEquals(ShiftState.Off, state.shift)
+        assertEquals('a', state.typed('a'))
+    }
+
+    @Test
+    fun switchingTheLanguageKeepsShiftForOneLetter() {
+        val state = KeyboardState().apply { shift = ShiftState.Once }
+
+        state.language = Language.English
+
+        assertEquals(ShiftState.Once, state.shift)
+    }
+
+    @Test
+    fun theSameLanguageKeepsCapsLock() {
+        val state = KeyboardState().apply { shift = ShiftState.Locked }
+
+        state.language = state.language
+
+        assertEquals(ShiftState.Locked, state.shift)
+    }
+
+    @Test
     fun theLanguageASwipeBringsKeepsWhichWayItWentUntilTheNextOne() {
         val state = KeyboardState()
 

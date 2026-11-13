@@ -33,8 +33,23 @@ fun InputPage(settings: KeyboardSettings, onOpen: (SettingsPage) -> Unit, onBack
     InputListPage(stringResource(R.string.settings_input), onBack) {
         SuggestionsEntry(settings) { onOpen(SettingsPage.Suggestions) }
         GesturesEntry(settings) { onOpen(SettingsPage.Gestures) }
+        DoubleSpacePeriodEntry(settings)
         VibrationEntries(settings.vibration)
     }
+}
+
+/** Sentence punctuation belongs to input itself, independently of suggestions and space-bar swipes. */
+@Composable
+private fun DoubleSpacePeriodEntry(settings: KeyboardSettings) {
+    val enabled by settings.punctuation.doubleSpacePeriod.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    SwitchEntry(
+        R.drawable.ic_key_space,
+        stringResource(R.string.settings_double_space_period),
+        stringResource(R.string.settings_double_space_period_hint),
+        checked = enabled,
+        onChange = { scope.launch { settings.punctuation.setDoubleSpacePeriod(it) } },
+    )
 }
 
 /**
@@ -73,6 +88,7 @@ fun SuggestionsPage(settings: KeyboardSettings, onBack: () -> Unit) {
             onChange = { scope.launch { settings.setAutocorrect(it) } },
         )
         ScreenshotsEntry(rememberScreenshotSwitch(settings))
+        LearningEntry(settings.learning)
     }
 }
 

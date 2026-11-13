@@ -6,7 +6,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import name.alexwayfer.preglide.engine.suggest.PersonalWords
+import name.alexwayfer.preglide.engine.suggest.writeLocal
+import name.alexwayfer.preglide.sync.refreshDevices
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration.Companion.seconds
 
@@ -43,7 +46,7 @@ class PersonalData(
     /** What was learned under [name]. The first call reads it from [store], so call it off the main thread. */
     fun load(name: String): PersonalWords = synchronized(loaded) {
         loaded.getOrPut(name) {
-            store.read(name).apply { others(name).takeIf { it.isNotEmpty() }?.let(::mergeOthers) }
+            store.read(name).apply { others(name).takeIf { it.isNotEmpty() }?.let(::refreshDevices) }
         }
     }
 
@@ -62,7 +65,7 @@ class PersonalData(
     fun save() {
         saving?.cancel()
         val texts = unsaved.mapNotNull { name ->
-            synchronized(loaded) { loaded[name] }?.let { name to buildString { it.write(this) } }
+            synchronized(loaded) { loaded[name] }?.let { name to buildString { it.writeLocal(this) } }
         }
         unsaved.clear()
         if (texts.isEmpty()) return
@@ -75,11 +78,17 @@ class PersonalData(
         writing?.join()
     }
 
-    /** Merges in again what the other devices learned under each name loaded, as after a sync brought it anew. */
-    fun refreshOthers() {
-        for ((name, words) in synchronized(loaded) { loaded.toMap() }) {
-            words.mergeOthers(others(name))
-            changed(name)
+    /** Replays cached edits even for an unopened language or after an interrupted sync. */
+    suspend fun refreshOthers(names: List<String>, downloadsChanged: Boolean) {
+        for (name in names) {
+            val devices = withContext(writeContext) { others(name) }
+            val edited = devices.values.any { it.hasWordEdits }
+            val existing = synchronized(loaded) { loaded[name] }
+            if (edited || downloadsChanged && existing != null) {
+                val words = existing ?: withContext(writeContext) { load(name) }
+                words.refreshDevices(devices)
+                changed(name)
+            }
         }
     }
 
@@ -91,7 +100,7 @@ class PersonalData(
         saving?.cancel()
         unsaved.clear()
         for ((name, words) in synchronized(loaded) { loaded.toMap() }) {
-            words.replaceWith(store.read(name).apply { mergeOthers(others(name)) })
+            words.replaceWith(store.read(name).apply { refreshDevices(others(name)) })
         }
         changes.value++
     }

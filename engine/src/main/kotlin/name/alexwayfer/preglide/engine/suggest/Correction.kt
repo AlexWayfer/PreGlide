@@ -36,6 +36,17 @@ fun correction(
 ): String? {
     val typed = currentWord(textBefore)
     if (!isCorrectable(typed, model)) return null
+    return secondCapitalSuggestion(typed, model) ?: likelyCorrection(textBefore, words, model, next, touches)
+}
+
+private fun likelyCorrection(
+    textBefore: CharSequence,
+    words: List<String>,
+    model: LanguageModel,
+    next: NextTokens?,
+    touches: Touches,
+): String? {
+    val typed = currentWord(textBefore)
     val typing = Typing(typed, touches)
     val scorer = WordScorer(model, next, wordContext(textBefore, RANKED_CONTEXT))
     val asTyped = maxOf(scorer.score(typed), UNKNOWN_WORD_SCORE)

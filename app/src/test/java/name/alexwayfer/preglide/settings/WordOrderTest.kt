@@ -22,6 +22,14 @@ class WordOrderTest {
     }
 
     @Test
+    fun searchFindsFragmentsAndLastUseBreaksTiesAlphabetically() {
+        assertEquals(listOf("абрикос", "ель", "ёлка", "Вася"), inOrder(words, WordOrder.Recent).map { it.spelling })
+        assertEquals(listOf("абрикос"), matchingWords(words, "РИК").map { it.spelling })
+        assertEquals(words, matchingWords(words, ""))
+        assertEquals(emptyList<Learned>(), matchingWords(words, "zzz"))
+    }
+
+    @Test
     fun theAlphabetIgnoresCaseAndTheDotsOfYo() {
         assertEquals(
             listOf("абрикос", "Вася", "ёлка", "ель"),

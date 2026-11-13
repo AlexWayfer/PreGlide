@@ -17,6 +17,8 @@ enum class SettingsPage {
     Input,
     Suggestions,
     Gestures,
+    Help,
+    GestureHelp,
     LearnedWords,
     Sync,
     Premium,
@@ -27,7 +29,7 @@ enum class SettingsPage {
 // Each page below is named on its own, with no else: a new page does not compile until it says whether it has the
 // button to try the keyboard.
 
-/** Whether the page has the button to try the keyboard: those whose settings change how it looks or types do. */
+/** Whether the page offers trying the keyboard: its settings and the guide to its gestures do. */
 val SettingsPage.hasTryButton: Boolean
     get() = when (this) {
         SettingsPage.Main,
@@ -38,8 +40,10 @@ val SettingsPage.hasTryButton: Boolean
         SettingsPage.Input,
         SettingsPage.Suggestions,
         SettingsPage.Gestures,
+        SettingsPage.GestureHelp,
         -> true
         SettingsPage.Setup,
+        SettingsPage.Help,
         SettingsPage.LearnedWords,
         SettingsPage.Sync,
         SettingsPage.Premium,

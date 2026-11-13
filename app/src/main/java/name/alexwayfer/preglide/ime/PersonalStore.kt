@@ -2,6 +2,7 @@ package name.alexwayfer.preglide.ime
 
 import name.alexwayfer.preglide.engine.layout.Language
 import name.alexwayfer.preglide.engine.suggest.PersonalWords
+import name.alexwayfer.preglide.engine.suggest.readLocalWords
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -24,7 +25,7 @@ class PersonalStore(private val folderOf: () -> File) {
     /** What was learned under [name], or nothing for a name not learned under yet. */
     fun read(name: String): PersonalWords {
         val file = fileOf(name)
-        return if (file.exists()) file.bufferedReader().useLines(PersonalWords::read) else PersonalWords()
+        return if (file.exists()) file.bufferedReader().useLines(::readLocalWords) else PersonalWords()
     }
 
     /**

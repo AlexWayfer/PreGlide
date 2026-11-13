@@ -4,6 +4,7 @@ import name.alexwayfer.preglide.engine.layout.KeyboardLayout
 import name.alexwayfer.preglide.engine.layout.Language
 import name.alexwayfer.preglide.engine.predict.NextTokens
 import name.alexwayfer.preglide.engine.predict.Vocabulary
+import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -12,6 +13,20 @@ class CorrectionTest {
     private val dictionary = Dictionary.parse(sequenceOf("привет\t100000", "дела\t10", "ещё\t500"))
 
     private fun model(personal: PersonalWords = PersonalWords()) = LanguageModel(dictionary, personal = personal)
+
+    @Test
+    fun softSignInsteadOfTIsCorrectedWithTheAppDictionary() {
+        val dictionary = File("../app/src/main/assets/dictionaries/ru.tsv").reader().use(Dictionary::read)
+        val model = LanguageModel(dictionary)
+        val words = suggestions("ьак", model, 3, touches = russian)
+
+        assertEquals("так", correction("ьак", words, model, null, russian))
+        val layout = russian.layout
+        val touches = Touches(layout, "ьак".map { layout.places.getValue(it).center })
+        val tappedWords = suggestions("ьак", model, 3, touches = touches)
+
+        assertEquals("так", correction("ьак", tappedWords, model, null, touches))
+    }
 
     @Test
     fun `a slip to a key nearby is fixed when the word meant is far likelier`() {

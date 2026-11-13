@@ -227,7 +227,10 @@ class PreGlideInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
             models = suggestions::model,
             emails = suggestions::emails,
             personal = personal,
-        ).apply { log = suggestions.log }
+        ).apply {
+            policy = { app.settings.learning.policy.value }
+            log = suggestions.log
+        }
     }
 
     private val removal by lazy {
@@ -240,7 +243,10 @@ class PreGlideInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         )
     }
 
-    private val typing: KeyTyping by lazy { KeyTyping(keyboard, suggestions, learning, glideTyping, removal, output) }
+    private val typing: KeyTyping by lazy {
+        suggestions.periodSpace.enabled = { app.settings.punctuation.doubleSpacePeriod.value }
+        KeyTyping(keyboard, suggestions, learning, glideTyping, removal, output)
+    }
     private val emojiChoice by lazy {
         EmojiChoice(keyboard, field, suggestions, learning, glideTyping, afterTyping = typing::autoCapitalize)
     }
@@ -361,7 +367,11 @@ class PreGlideInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
     // The keys go to the emoji panel first: its key or the comma's long press opens it, and its search takes the keys'
     // presses.
     private val onKey: (KeyAction, Boolean, KeyTap?) -> Unit = { action, longPress, tap ->
-        if (!emojiActions.key(action, longPress)) typing.key(action, longPress, tap)
+        if (emojiActions.key(action, longPress)) {
+            suggestions.periodSpace.forget()
+        } else {
+            typing.key(action, longPress, tap)
+        }
     }
 
     // Fresh screenshots, offered as if copied, once the user turned them on and gave the leave to read photos.
@@ -432,6 +442,8 @@ class PreGlideInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
     override fun onCreateInputView(): View {
         // Compose looks up its lifecycle through the view tree, and an IME window has no activity to provide one.
         window.window?.decorView?.let { decorView ->
+            // Compose sets the keyboard palette, including when it differs from the system theme.
+            decorView.isForceDarkAllowed = false
             decorView.setViewTreeLifecycleOwner(this)
             decorView.setViewTreeSavedStateRegistryOwner(this)
             decorView.runAnimationsAt(app.motion, lifecycle)

@@ -6,6 +6,7 @@ import name.alexwayfer.preglide.engine.layout.KeyAction
 import name.alexwayfer.preglide.engine.layout.Language
 import name.alexwayfer.preglide.engine.suggest.Dictionary
 import name.alexwayfer.preglide.engine.suggest.LanguageModel
+import name.alexwayfer.preglide.engine.suggest.LearningPolicy
 import name.alexwayfer.preglide.testDispatchers
 import java.io.File
 
@@ -103,7 +104,7 @@ internal class KeyboardBench(
         emails = { null },
         personal = personal,
         clock = { 42 },
-    )
+    ).apply { policy = { LearningPolicy(uses = 1) } }
     private val removal = WordRemoval(
         field,
         language = { Language.Russian },

@@ -34,8 +34,8 @@ private const val NO_KEY = '\u0000'
  * Up to [limit] words of the dictionary a glide over [keys] may mean, the likeliest by their frequency and what
  * matching their keys to the glide costs, each with what its shape costs.
  */
-internal fun Dictionary.glided(keys: GlideKeys, limit: Int): List<Meant> =
-    if (limit <= 0) emptyList() else GlideWalk(this, keys, limit).apply { search() }.found()
+internal fun Dictionary.glided(keys: GlideKeys, limit: Int, preferCapital: Boolean = false): List<Meant> =
+    if (limit <= 0) emptyList() else GlideWalk(this, keys, limit, preferCapital).apply { search() }.found()
 
 /** What reading the glide over these keys as [word] costs, or null when matching its keys costs too much. */
 internal fun GlideKeys.costOf(word: String): Float? {
@@ -56,10 +56,16 @@ private fun GlideKeys.shapeOf(word: String): Float? = lineOf(word)?.let { shapeC
  * a word goes on. So the first [limit] words that come out whole are the best, and the starts left in the queue,
  * most of the tree, are never looked into.
  */
-internal class GlideWalk(private val dictionary: Dictionary, private val keys: GlideKeys, private val limit: Int) {
+internal class GlideWalk(
+    private val dictionary: Dictionary,
+    private val keys: GlideKeys,
+    private val limit: Int,
+    private val preferCapital: Boolean,
+) {
     private val tree = dictionary.tree
     private val rows = keys.rows
     private val best = ArrayList<Whole>(limit)
+    private val possibleCapitalBonus = if (preferCapital) CAPITAL_GLIDE_BONUS else 0f
 
     fun search() {
         val queue = PriorityQueue<Node>(compareByDescending { it.rank })
@@ -97,7 +103,8 @@ internal class GlideWalk(private val dictionary: Dictionary, private val keys: G
                 // A word with no key, as a lone hyphen, is no word to glide.
                 val whole = node.row?.let(rows::whole) ?: UNREACHED
                 if (whole != UNREACHED) {
-                    val rank = tree.logFrequencies[index] - whole
+                    val rank = tree.logFrequencies[index] - whole +
+                        capitalGlideBonus(dictionary.words[index], preferCapital)
                     queue += Whole(index, whole, rank)
                 }
                 index++
@@ -106,7 +113,7 @@ internal class GlideWalk(private val dictionary: Dictionary, private val keys: G
             val end = tree.branchEnd(index, node.to, node.depth, char)
             val keyed = keys.has(char) && char != node.last
             // A char that adds no key reads as its start does; a key is read once the start comes out of the queue.
-            val rank = tree.logFrequencies.max(index, end) - cost
+            val rank = tree.logFrequencies.max(index, end) - cost + possibleCapitalBonus
             queue += if (keyed) {
                 Pending(index, end, node.depth + 1, node.row, char, rank)
             } else {
@@ -122,7 +129,7 @@ internal class GlideWalk(private val dictionary: Dictionary, private val keys: G
         val row = node.row?.let { rows.follow(it, char) } ?: rows.start(char)
         // Ranked by what its words likely cost, the way ahead too, so a start that explains a long glide's beginning
         // alone waits behind one that explains more.
-        val rank = tree.logFrequencies.max(node.from, node.to) - rows.ahead(row)
+        val rank = tree.logFrequencies.max(node.from, node.to) - rows.ahead(row) + possibleCapitalBonus
         return Start(node.from, node.to, node.depth, row, char, rank)
     }
 

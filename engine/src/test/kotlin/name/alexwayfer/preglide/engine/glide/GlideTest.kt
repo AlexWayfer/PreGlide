@@ -26,6 +26,30 @@ class GlideTest {
     )
 
     @Test
+    fun manualCapitalFavorsNamesOfTheSameShape() {
+        val words = Dictionary.parse(sequenceOf("по\t100", "Про\t50"))
+        val names = LanguageModel(words)
+        val glide = glideThrough("по")
+
+        assertEquals("по", glidedWords(names, russian, glide, 1).first())
+        assertEquals("Про", glidedWords(names, russian, glide, 1, WordsBefore(preferCapital = true)).first())
+        names.personal.learn("про", previous = null, time = 1)
+        val scored = glidedScores(names, russian, glide, 2, WordsBefore(preferCapital = true))
+        assertEquals(0f, scored.first { it.word == "Про" }.capitalBonus)
+    }
+
+    @Test
+    fun manualCapitalStillLetsAMuchCloserShapeWin() {
+        val name = GlidedWord("Про", 100, context = null, uses = 0, cost = 10f, capitalBonus = CAPITAL_GLIDE_BONUS)
+        val ordinary = GlidedWord("по", 100, context = null, uses = 0, cost = 1f)
+
+        assertTrue(ordinary.score > name.score)
+        assertEquals(CAPITAL_GLIDE_BONUS, capitalGlideBonus("Про", preferCapital = true))
+        assertEquals(0f, capitalGlideBonus("", preferCapital = true))
+        assertEquals(0f, capitalGlideBonus("Про", preferCapital = false))
+    }
+
+    @Test
     fun `a glide along a word's keys reads as that word first`() {
         assertEquals("привет", glidedWords(model(), russian, glideThrough("привет"), 3).first())
         assertEquals("пример", glidedWords(model(), russian, glideThrough("пример"), 3).first())

@@ -70,6 +70,36 @@ class WordErasingTest {
     }
 
     @Test
+    fun hyphenatedPartsCanBeErasedInSuccessiveSwipes() {
+        val field = Field("Вот рок-н-ролл!  ")
+        val erasing = erasing(field)
+
+        for (remaining in listOf("Вот рок-н-", "Вот рок-", "Вот ")) {
+            erasing.startSwipe()
+            erasing.select(1)
+            erasing.endSwipe(lifted = true)
+            assertEquals(remaining, field.text)
+        }
+    }
+
+    @Test
+    fun hyphenatedSelectionShrinksBackAndCancellationRestoresTheCursor() {
+        val field = Field("кто-нибудь")
+        val erasing = erasing(field)
+
+        assertEquals(2, erasing.startSwipe())
+        erasing.select(2)
+        assertEquals("кто-нибудь", field.selected)
+        erasing.select(1)
+        assertEquals("нибудь", field.selected)
+        erasing.endSwipe(lifted = false)
+
+        assertEquals("кто-нибудь", field.text)
+        assertEquals(10 to 10, field.start to field.end)
+        assertEquals(listOf("selecting", "ended"), events)
+    }
+
+    @Test
     fun wordsErasedFromALowercaseOneTellNoCapital() {
         val field = Field("город Москва и область")
         val erasing = erasing(field)

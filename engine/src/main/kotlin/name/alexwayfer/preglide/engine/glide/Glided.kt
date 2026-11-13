@@ -20,6 +20,9 @@ import kotlin.math.exp
  */
 internal const val GLIDED_WORDS = 16
 
+/** A manual capital adds four nats to a name's prior; the glide's shape can still outweigh it. */
+internal const val CAPITAL_GLIDE_BONUS = 4f
+
 /**
  * A word a glide may mean, in the dictionary's spelling, and what it was scored by: its [frequency] per billion
  * words, how likely it comes next by the context, per billion, null without the prediction model, how many [uses]
@@ -40,16 +43,22 @@ data class GlidedWord(
     val boostUses: Int = uses,
     /** What [context] was mixed from, null without the model: for the debug glide log. */
     val contextParts: ContextParts? = null,
+    /** The case the user requested, counted after the uses and spelling shares. */
+    val capitalBonus: Float = 0f,
 ) {
     /** How likely the word is meant, the user's uses counted as [withUses] counts them: see [glideScore]. */
-    val score: Double = glideScore(withUses(likelihood, frequency, boostUses), cost)
+    val score: Double = glideScore(withUses(likelihood, frequency, boostUses), cost - capitalBonus)
 }
 
 /**
  * What comes before a glided word: the [words] before it, the nearest last, and [next], what the prediction model
  * gives for the text before it, null without the model.
  */
-class WordsBefore(val words: List<String> = emptyList(), val next: NextTokens? = null)
+class WordsBefore(
+    val words: List<String> = emptyList(),
+    val next: NextTokens? = null,
+    val preferCapital: Boolean = false,
+)
 
 /** The words of [glidedScores], alone. */
 fun glidedWords(
@@ -82,7 +91,7 @@ fun glidedScores(
         model.personal.rankedAfter(context).flatten().map { it.spelling } +
         model.personal.all().map { it.spelling }
     val found = LinkedHashMap<String, Meant>()
-    for (meant in model.dictionary.glided(keys, GLIDED_WORDS + model.personal.removedCount)) {
+    for (meant in model.dictionary.glided(keys, GLIDED_WORDS + model.personal.removedCount, before.preferCapital)) {
         found[keyOf(meant.word)] = meant
     }
     for (word in likely) {
@@ -99,6 +108,9 @@ fun glidedScores(
             model.personal.learned(meant.word)?.count ?: 0,
             meant.cost,
             contextParts = mix?.parts(meant.word, meant.frequency),
+            capitalBonus = capitalGlideBonus(
+                model.personal.learned(meant.word)?.spelling ?: meant.word, before.preferCapital,
+            ),
         )
     }
     return splitByUses(scored).sortedWith(compareByDescending<GlidedWord> { it.score }.thenBy { it.word }).take(count)
@@ -138,3 +150,7 @@ fun glideIsSure(words: List<GlidedWord>): Boolean {
 }
 
 private fun keyOf(word: String): String = word.lowercase(Locale.ROOT)
+
+/** The name's prior when a capital was requested, before changing any candidate's displayed case. */
+internal fun capitalGlideBonus(word: String, preferCapital: Boolean): Float =
+    if (preferCapital && word.firstOrNull()?.isUpperCase() == true) CAPITAL_GLIDE_BONUS else 0f

@@ -5,6 +5,7 @@ import name.alexwayfer.preglide.engine.suggest.LanguageModel
 import name.alexwayfer.preglide.engine.suggest.currentWord
 import name.alexwayfer.preglide.engine.suggest.endsSentenceBeforeSpace
 import name.alexwayfer.preglide.engine.suggest.endsWithMarkBeforeSpace
+import name.alexwayfer.preglide.engine.suggest.fixesSecondCapital
 import name.alexwayfer.preglide.engine.suggest.hyphenSplit
 import name.alexwayfer.preglide.engine.suggest.isNumberEnding
 
@@ -25,12 +26,6 @@ fun stripSlots(suggestions: List<String>, typedWord: String? = null): List<Strin
         suggestions.isEmpty() -> listOf(null, typedWord, null)
         else -> listOf(typedWord, suggestions[0], suggestions.getOrNull(1))
     }
-
-/**
- * Whether a long press on [word] may remove it from suggestions: not on the [typedWord], when the strip shows it,
- * which is what the user typed, no suggestion.
- */
-fun isRemovable(word: String?, typedWord: String?): Boolean = word != typedWord
 
 /**
  * The word being typed at the end of [textBefore], the text before the cursor, for the strip to always show as it
@@ -65,6 +60,7 @@ data class StripWords(
     val correction: String?,
     val glidedWord: String?,
     val turn: Int,
+    val typedWordRemovable: Boolean = false,
 )
 
 /** What the strip's row of words shows for [state]. */
@@ -74,6 +70,7 @@ fun stripWords(state: KeyboardState): StripWords = StripWords(
     state.correction,
     state.glidedWord,
     state.nextWordsTurns,
+    state.typedWordRemovable,
 )
 
 /**
@@ -139,9 +136,11 @@ fun gluedWords(textBefore: CharSequence, suggestions: List<String>, model: Langu
 }
 
 /** Whether the dictionary or the user's own words have [word] as one word. */
-private fun LanguageModel.knowsWhole(word: String): Boolean =
+internal fun LanguageModel.knowsWhole(word: String): Boolean =
     dictionary.spellingOf(word) != null || personal.learned(word) != null
 
 /** [suggestions] without [typedWord], which the strip shows on its own, in whatever case. */
 fun withoutTyped(suggestions: List<String>, typedWord: String?): List<String> =
-    if (typedWord == null) suggestions else suggestions.filterNot { it.equals(typedWord, ignoreCase = true) }
+    if (typedWord == null) suggestions else suggestions.filterNot {
+        it.equals(typedWord, ignoreCase = true) && !fixesSecondCapital(typedWord, it)
+    }
