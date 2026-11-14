@@ -5,13 +5,13 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.ApplicationInfo
 import android.content.res.Configuration.ORIENTATION_LANDSCAPE
 import android.inputmethodservice.InputMethodService
 import android.text.InputType
 import android.os.Build
 import android.os.UserManager
 import android.util.Size
+import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
@@ -34,6 +34,7 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import kotlinx.coroutines.launch
+import name.alexwayfer.preglide.BuildConfig
 import name.alexwayfer.preglide.PreGlideApplication
 import name.alexwayfer.preglide.sync.keyboardHidden
 import name.alexwayfer.preglide.settings.offersScreenshots
@@ -49,9 +50,6 @@ import name.alexwayfer.preglide.ui.theme.runAnimationsAt
 import java.io.File
 import java.util.concurrent.Executors
 import kotlin.math.roundToInt
-
-/** The file in the no-backup folder a debug build keeps swaps of glided words in (see [GlideSlips]). */
-private const val GLIDE_SLIPS_FILE = "glide-slips.txt"
 
 /** The size of an image's preview in the strip's chip, with room for a sharp crop. */
 private const val CLIP_PREVIEW_DP = 48
@@ -94,9 +92,8 @@ class PreGlideInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         }
     }
 
-    // How far each swipe from the space bar took the cursor, for tracing a swipe the user did not mean: in a debug
-    // build alone, as the typing log.
-    private val cursor = FieldCursor(field, { line -> if (debuggable) AppLog.i(TYPING_TAG, line) }) {
+    // How far each swipe from the space bar took the cursor, for tracing a swipe the user did not mean.
+    private val cursor = FieldCursor(field, { line -> if (BuildConfig.LOCAL_TRACING) Log.i(TYPING_TAG, line) }) {
         sendDownUpKeyEvents(it)
     }
 
@@ -210,15 +207,13 @@ class PreGlideInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
             ),
             corrects = { app.settings.autocorrect.value },
             TypingLines(
-                // What the keyboard did while typing, for tracing a glitch the user saw: in a debug build alone.
-                line = if (debuggable) { line -> AppLog.i(TYPING_TAG, line) } else { _ -> },
+                // Detailed traces go to logcat in local builds, outside the problem report's journal.
+                line = if (BuildConfig.LOCAL_TRACING) { line -> Log.i(TYPING_TAG, line) } else { _ -> },
                 // How the strip fares, counts alone, for a report from any build.
                 summary = { line -> AppLog.i(TYPING_TAG, line) },
             ),
         )
     }
-
-    private val debuggable get() = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
 
     private val learning by lazy {
         Learning(
@@ -282,10 +277,9 @@ class PreGlideInputMethodService : InputMethodService(), LifecycleOwner, SavedSt
         )
     }
 
-    // Glided words and their swaps, for tuning glides on real paths: in a debug build alone, as they hold the words
-    // typed.
+    // Glided words and their swaps, for tuning glides on real paths in local builds.
     private val glideSlips by lazy {
-        if (debuggable) {
+        if (BuildConfig.LOCAL_TRACING) {
             GlideSlips(File(noBackupFilesDir, GLIDE_SLIPS_FILE), Executors.newSingleThreadExecutor())
         } else {
             null

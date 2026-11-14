@@ -1,4 +1,9 @@
 <resources>
+    <string name="glide_export">Сохранить журнал глайдов</string>
+    <string name="glide_export_hint">В файле будут слова, набранные глайдом, и подсказки</string>
+    <string name="glide_export_saved">Журнал глайдов сохранён</string>
+    <string name="glide_export_empty">В журнале пока нет глайдов</string>
+    <string name="glide_export_failed">Не удалось сохранить журнал глайдов</string>
     <string name="settings_setup_title">Настройка</string>
     <string name="settings_setup_ready">PreGlide готова к работе</string>
     <string name="settings_setup_unfinished">Включите и выберите PreGlide, чтобы ею печатать</string>

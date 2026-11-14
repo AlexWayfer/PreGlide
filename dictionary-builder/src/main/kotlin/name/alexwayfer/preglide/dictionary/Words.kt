@@ -1,6 +1,7 @@
 package name.alexwayfer.preglide.dictionary
 
 import name.alexwayfer.preglide.engine.suggest.compareFolded
+import name.alexwayfer.preglide.engine.suggest.isDictionaryGarbage
 import java.util.Locale
 import kotlin.math.roundToLong
 
@@ -93,9 +94,9 @@ fun spelling(spellings: List<Form>): String {
     }
 }
 
-/** Whether the dictionary of [corpus] can hold [word]: a real one-letter word, and not too long. */
+/** Whether [corpus] keeps [word]: not corrupted, too long, or a single letter other than a real word. */
 fun keeps(word: Word, corpus: Corpus): Boolean =
-    word.spelling.length <= MAX_LENGTH &&
+    !isDictionaryGarbage(word.spelling) && word.spelling.length <= MAX_LENGTH &&
         (word.spelling.length > 1 || word.spelling.lowercase(Locale.ROOT) in corpus.singleLetterWords)
 
 /**

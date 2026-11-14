@@ -74,7 +74,14 @@ class PredictionTest {
     }
 
     @Test(expected = IllegalArgumentException::class)
-    fun `a prediction needs each word in the search order`() {
-        Prediction(vocabulary, 3, Array(vocabulary.size) { "" }, 0, IntArray(0)) { FloatArray(0) }
+    fun rejectsNonWordIdsInSearchOrder() {
+        Prediction(vocabulary, 3, Array(vocabulary.size) { "" }, 0, intArrayOf(Vocabulary.UNKNOWN)) { FloatArray(0) }
+    }
+
+    @Test
+    fun acceptsAnEmptySearchOrder() {
+        val prediction = Prediction(vocabulary, 3, Array(vocabulary.size) { "" }, 0, IntArray(0)) { FloatArray(0) }
+
+        assertEquals(emptyList<Int>(), NextTokens(prediction, FloatArray(vocabulary.size)).likeliest)
     }
 }

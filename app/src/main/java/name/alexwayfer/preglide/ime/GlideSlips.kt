@@ -11,6 +11,7 @@ import java.util.Locale
 import java.util.concurrent.Executor
 
 private const val SLIPS_TAG = "GlideSlips"
+internal const val GLIDE_SLIPS_FILE = "glide-slips.txt"
 
 /** The most the file of slips grows to, a few thousand glides of 3 to 7 KB: past it, new ones are not kept. */
 private const val MAX_SLIPS_BYTES = 16L * 1024 * 1024
@@ -71,7 +72,7 @@ internal fun glidedScoreText(word: GlidedWord): String = with(word) {
  * Keeps the glides and what the user made of them (see [GlideSlip]) in [file], a line each (see [glideSlipLine]),
  * written on [writer]'s thread, while the file is under [maxBytes]: the glides he left as they were tell what reading
  * gets right, the ones he swapped or erased what it gets wrong. For tuning glides on the user's real paths in a
- * debug build only: the lines hold the words he typed, so they never go to AppLog or a report.
+ * local build only: the lines hold the words he typed, so they never go to AppLog or a report.
  */
 class GlideSlips(
     private val file: File,

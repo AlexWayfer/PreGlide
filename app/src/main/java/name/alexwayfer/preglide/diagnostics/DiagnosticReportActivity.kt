@@ -2,7 +2,6 @@ package name.alexwayfer.preglide.diagnostics
 
 import androidx.activity.ComponentActivity
 import android.app.NotificationManager
-import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -16,7 +15,6 @@ import name.alexwayfer.preglide.R
 import java.io.File
 import java.io.IOException
 
-private const val REPORT_ADDRESS = "preglide@alexwayfer.name"
 private const val EXTRA_WITH_APP_LOG = "with_app_log"
 
 /** Opens the share sheet with the report; [withAppLog] adds the whole log file. */
@@ -37,12 +35,14 @@ class DiagnosticReportActivity : ComponentActivity() {
 
     private suspend fun writeReport(): File? {
         val folder = File(cacheDir, "reports")
-        val file = File(folder, diagnosticReportFileName(System.currentTimeMillis()))
+        val name = diagnosticReportFileName(System.currentTimeMillis())
+        val file = File(folder, name.removeSuffix(".txt") + ".zip")
         try {
             folder.mkdirs()
             // Each report has its own name; the ones shared before are no longer needed.
             folder.listFiles()?.forEach { it.delete() }
-            file.writeText(Diagnostics.report(this, intent.getBooleanExtra(EXTRA_WITH_APP_LOG, false)))
+            val report = Diagnostics.report(this, intent.getBooleanExtra(EXTRA_WITH_APP_LOG, false))
+            writeDiagnosticArchive(file.outputStream(), name, report)
         } catch (error: IOException) {
             Log.w(DIAGNOSTICS_TAG, "report write failed ${error.javaClass.simpleName}")
             return null
@@ -54,15 +54,7 @@ class DiagnosticReportActivity : ComponentActivity() {
         val uri = FileProvider.getUriForFile(this, "$packageName.diagnostics", file)
         val summary = Diagnostics.shareText(this)
         DiagnosticJournal.markSent(this)
-        val send = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_EMAIL, arrayOf(REPORT_ADDRESS))
-            putExtra(Intent.EXTRA_SUBJECT, getString(R.string.diagnostics_subject))
-            putExtra(Intent.EXTRA_TEXT, summary)
-            putExtra(Intent.EXTRA_STREAM, uri)
-            clipData = ClipData.newRawUri(null, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
+        val send = diagnosticAttachmentIntent(this, uri, summary)
         startActivity(Intent.createChooser(send, getString(R.string.diagnostics_send)))
     }
 }

@@ -39,10 +39,11 @@ fun predictionOver(
     return Prediction(vocabulary, context, spellings, unknown, searchOrderOf(vocabulary), logits)
 }
 
-/** The ids of [vocabulary]'s words in the order a search by a typed start sees them (see [compareFolded]). */
+/** Suggestible word ids in search order; rejected words keep their original ids for model input and output. */
 fun searchOrderOf(vocabulary: Vocabulary): IntArray {
     val words = vocabulary.words
-    return words.indices.sortedWith { a, b -> compareFolded(words[a], words[b]) }
+    return words.indices.filterNot { isDictionaryGarbage(words[it]) }
+        .sortedWith { a, b -> compareFolded(words[a], words[b]) }
         .map { Vocabulary.FIXED.size + it }
         .toIntArray()
 }

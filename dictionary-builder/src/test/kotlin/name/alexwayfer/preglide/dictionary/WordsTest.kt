@@ -7,6 +7,26 @@ import org.junit.Test
 
 class WordsTest {
     @Test
+    fun rejectsWordsStartingWithRussianSigns() {
+        for (text in listOf("ьфй", "ЬЭ", "ъб", "ЪБ")) {
+            assertFalse(text, keeps(Word(text, 1), Corpus.Russian))
+        }
+        for (text in listOf("объект", "пьёт", "Ын", "э-э")) {
+            assertTrue(text, keeps(Word(text, 1), Corpus.Russian))
+        }
+    }
+
+    @Test
+    fun rejectsConfirmedEncodingGarbageButKeepsNamesAndAbbreviations() {
+        for (text in listOf("БПЕЛЪ", "ГДЕЯЭ", "ДЕКЮРЭ", "декюрэ", "еЯКХ", "ЯЙНКЭЙН")) {
+            assertFalse(text, keeps(Word(text, 1), Corpus.Russian))
+        }
+        for (text in listOf("бдсм", "ВДНХ", "ВГТРК", "ЛПНП", "МБОУ", "Бунд", "Гюн", "Ын", "э-э")) {
+            assertTrue(text, keeps(Word(text, 1), Corpus.Russian))
+        }
+    }
+
+    @Test
     fun `a word that comes in lowercase often enough is spelled in lowercase`() {
         assertEquals("привет", spelling(listOf(Form("Привет", 70), Form("привет", 30))))
     }

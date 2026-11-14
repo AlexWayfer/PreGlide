@@ -15,6 +15,19 @@ class WordCandidatesTest {
     private fun local(owner: PersonalWords) = buildString { owner.writeLocal(this) }
 
     @Test
+    fun undoPendingOccurrencesWorksWithoutAndroid15ListMethods() {
+        val pending = LegacyOccurrences()
+        pending.addAll(listOf(first, second))
+        words.candidates.pending[keyOf(first.spelling)] = pending
+
+        words.undoOccurrence(second.spelling, second.context, second.kept, second.beganField)
+        assertEquals(listOf(first), pending)
+        words.undoOccurrence(first.spelling, first.context, first.kept, first.beganField)
+        assertFalse(words.isCandidate(first.spelling))
+        assertNull(words.learned(first.spelling))
+    }
+
+    @Test
     fun syncStopsAtTheLocalSectionWithEitherLineEnding() {
         for (ending in listOf("\r\n", "\n")) {
             val prefix = "w\tknown\t1\t1\t0$ending"

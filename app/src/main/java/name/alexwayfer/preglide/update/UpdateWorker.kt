@@ -20,7 +20,7 @@ class UpdateWorker(context: Context, parameters: WorkerParameters) : CoroutineWo
 }
 
 internal fun scheduleUpdates(context: Context) {
-    if (BuildConfig.DEBUG) return
+    if (BuildConfig.LOCAL_TRACING) return
     val request = PeriodicWorkRequestBuilder<UpdateWorker>(UPDATE_INTERVAL.inWholeMinutes, TimeUnit.MINUTES)
         .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
         .build()

@@ -90,7 +90,7 @@ fun PersonalWords.undoOccurrence(word: String, context: List<String>, kept: Bool
     val key = keyOf(word)
     val pending = candidates.pending[key]
     if (pending != null) {
-        pending.removeLast()
+        pending.removeAt(pending.lastIndex)
         if (pending.isEmpty()) candidates.pending.remove(key)
     } else {
         unlearn(word, context, kept)

@@ -20,7 +20,9 @@ class Prediction(
 ) {
     init {
         require(spellings.size == vocabulary.size) { "A spelling for each token of the vocabulary" }
-        require(searchOrder.size == vocabulary.words.size) { "Each word of the vocabulary in the search order" }
+        require(searchOrder.all { it in Vocabulary.FIXED.size until vocabulary.size }) {
+            "Only word ids belong in the search order"
+        }
     }
 
     /** The probability of each token of the vocabulary coming next after [contextIds]. */

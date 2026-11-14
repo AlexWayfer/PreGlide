@@ -30,7 +30,7 @@ internal fun appUpdates(app: PreGlideApplication): Updates = Updates(
         ),
         SystemClock::elapsedRealtime,
         { release -> updateNotification(app, release) },
-        enabled = !BuildConfig.DEBUG,
+        enabled = !BuildConfig.LOCAL_TRACING,
         problem = { updateProblem(it.name) },
     ),
 )

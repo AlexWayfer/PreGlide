@@ -1,4 +1,9 @@
 <resources>
+    <string name="glide_export">Save glide trace</string>
+    <string name="glide_export_hint">The file includes words you glided and suggestions</string>
+    <string name="glide_export_saved">Glide trace saved</string>
+    <string name="glide_export_empty">No glides recorded yet</string>
+    <string name="glide_export_failed">Couldn’t save the glide trace</string>
     <string name="app_name" translatable="false">PreGlide</string>
     <!-- The name inside the app. The debug build overrides only app_name, for the launcher and the keyboard list. -->
     <string name="product_name" translatable="false">PreGlide</string>

@@ -10,6 +10,20 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PredictedTest {
+    @Test
+    fun ignoresRussianSignGarbageWithoutChangingTokenIds() {
+        val words = Vocabulary(listOf("ьфй", "мир", "ЬЭ", "ъб", "ЪБ", "объект"))
+        val clean = predictionOver(Dictionary.parse(sequenceOf("мир\t40", "объект\t20")), words, 4) {
+            FloatArray(words.size)
+        }
+        val next = NextTokens(clean, FloatArray(words.size) { 1f })
+
+        assertEquals(listOf("мир", "объект"), next.likeliest.map { words.word(it) })
+        assertEquals(emptyList<Pair<Int, Float>>(), likeliestWords(next, "ь", 3))
+        assertEquals(Vocabulary.FIXED.size + 1, words.textIds("мир").last())
+        assertEquals("ьфй", words.word(Vocabulary.FIXED.size))
+    }
+
     // The model knows four words; "мирный" and "мираж" are the dictionary's alone.
     private val dictionary = Dictionary.parse(
         sequenceOf("дела\t50", "мир\t40", "мираж\t2", "мирный\t6", "Москва\t30", "привет\t20"),

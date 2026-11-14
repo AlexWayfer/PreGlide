@@ -13,6 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import name.alexwayfer.preglide.BuildConfig
 import name.alexwayfer.preglide.R
 
 internal fun NavGraphBuilder.helpPages(
@@ -34,6 +35,7 @@ internal fun HelpPage(onOpen: (SettingsPage) -> Unit, onBack: () -> Unit) {
             stringResource(R.string.gesture_help_show), { onOpen(SettingsPage.GestureHelp) })
         PageEntry(R.drawable.ic_license, stringResource(R.string.settings_licenses),
             stringResource(R.string.settings_licenses_hint), { onOpen(SettingsPage.Licenses) })
+        if (BuildConfig.LOCAL_TRACING) GlideExportEntry()
     }
 }
 

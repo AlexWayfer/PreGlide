@@ -1,4 +1,5 @@
 import java.util.Properties
+import com.android.build.api.variant.ApplicationVariant
 import dev.detekt.gradle.Detekt
 import org.gradle.api.tasks.compile.JavaCompile
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
@@ -21,11 +22,12 @@ android {
 
     defaultConfig {
         applicationId = "name.alexwayfer.preglide"
+        buildConfigField("boolean", "LOCAL_TRACING", "false")
         minSdk = 30
         targetSdk = 37
         // One counter for both editions: they share the application ID and install over each other, and
         // Android refuses a lower code. Every release of either edition raises it; each edition names its own version.
-        versionCode = 7
+        versionCode = 9
 
         // Phones only, 64-bit and 32-bit ARM: some still run 32-bit Android. The x86 emulator is not needed yet.
         ndk {
@@ -39,14 +41,14 @@ android {
     productFlavors {
         create("free") {
             dimension = "tier"
-            versionName = "1.1.0"
+            versionName = "1.1.1"
             buildConfigField("boolean", "PREMIUM", "false")
         }
         if (premiumSources) {
             create("premium") {
                 dimension = "tier"
                 isDefault = true
-                versionName = "1.0.0"
+                versionName = "1.1.0"
                 buildConfigField("boolean", "PREMIUM", "true")
             }
         }
@@ -72,6 +74,7 @@ android {
         debug {
             // Debug and release builds carry different keys, so they install side by side instead of replacing each other.
             applicationIdSuffix = ".debug"
+            buildConfigField("boolean", "LOCAL_TRACING", "true")
         }
         release {
             optimization {
@@ -79,6 +82,15 @@ android {
             }
             proguardFiles("proguard-rules.pro")
             signingConfig = signingConfigs.findByName("release")
+        }
+        // Keep release optimization and the installed debug app's identity, signing key, and data.
+        create("optimizedDebug") {
+            initWith(getByName("release"))
+            matchingFallbacks += "release"
+            isDebuggable = false
+            applicationIdSuffix = ".debug"
+            signingConfig = signingConfigs.getByName("debug")
+            buildConfigField("boolean", "LOCAL_TRACING", "true")
         }
     }
     compileOptions {
@@ -126,13 +138,16 @@ kotlin {
 }
 
 // An APK to hand out is named for its edition, as the two share one id and the file alone tells them apart:
-// PreGlide-free-0.3.0.apk.
-androidComponents {
-    onVariants(selector().withBuildType("release")) { variant ->
-        variant.outputs.forEach { output ->
-            output.outputFileName.set(output.versionName.map { "PreGlide-${variant.flavorName}-$it.apk" })
-        }
+// PreGlide-free-1.1.0.apk. The optimized debug APK has its own name.
+fun nameApkForItsEdition(variant: ApplicationVariant, suffix: String = "") {
+    variant.outputs.forEach { output ->
+        output.outputFileName.set(output.versionName.map { "PreGlide-${variant.flavorName}-$it$suffix.apk" })
     }
+}
+
+androidComponents {
+    onVariants(selector().withBuildType("release")) { nameApkForItsEdition(it) }
+    onVariants(selector().withBuildType("optimizedDebug")) { nameApkForItsEdition(it, "-optimized-debug") }
 }
 
 dependencies {

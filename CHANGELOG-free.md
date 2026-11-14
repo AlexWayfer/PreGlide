@@ -1,5 +1,11 @@
 # PreGlide (free version)
 
+## v1.1.1 (2026-11-14)
+
+*   Fixed a crash when undoing word learning on older Android versions
+*   Removed malformed words from Russian suggestions
+*   Problem reports are now shared as ZIP attachments
+
 ## v1.1.0 (2026-11-13)
 
 *   Search, rename, and merge learned words, with undo
